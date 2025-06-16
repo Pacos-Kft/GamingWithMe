@@ -15,4 +15,10 @@
     <ProjectReference Include="..\GamingWithMe.Domain\GamingWithMe.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+    <Folder Include="Mappings\" />
+    <Folder Include="Queries\" />
+  </ItemGroup>
+
 </Project>
