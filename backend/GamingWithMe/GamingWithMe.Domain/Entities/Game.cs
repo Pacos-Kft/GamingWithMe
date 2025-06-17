@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GamingWithMe.Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,12 +14,14 @@ namespace GamingWithMe.Domain.Entities
         public string Description { get; set; }
         public string Slug { get; set; }
 
+        private Game() { }
+
         public Game(string name, string description)
         {
             Id = Guid.NewGuid();
             Name = name;
-            Description = description;
-            Slug = name.Replace(" ", "-");
+            Description = description ?? string.Empty;
+            Slug = SlugGenerator.From(name);
         }
     }
 }

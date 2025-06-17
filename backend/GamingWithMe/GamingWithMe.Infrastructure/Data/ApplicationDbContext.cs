@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Data
 {
-    public class DbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext
     {
-        public DbContext(DbContextOptions<DbContext> options) : base(options) { }
+        public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Game> Games => Set<Game>();
 

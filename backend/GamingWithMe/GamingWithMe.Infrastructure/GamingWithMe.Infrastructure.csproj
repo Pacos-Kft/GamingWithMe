@@ -25,8 +25,4 @@
     <ProjectReference Include="..\GamingWithMe.Domain\GamingWithMe.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repositories\" />
-  </ItemGroup>
-
 </Project>

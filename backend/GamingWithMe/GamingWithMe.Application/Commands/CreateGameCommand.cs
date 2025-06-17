@@ -8,5 +8,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record CreateGameCommand(NewGameDto newGame) : IRequest<Guid>;
+    public record CreateGameCommand(GameDto newGame) : IRequest<Guid>;
 }

@@ -1,4 +1,7 @@
-﻿using GamingWithMe.Application.Commands;
+﻿using AutoMapper;
+using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Domain.Entities;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -10,9 +13,24 @@ namespace GamingWithMe.Application.Handlers
 {
     internal class CreateGameHandler : IRequestHandler<CreateGameCommand, Guid>
     {
-        public Task<Guid> Handle(CreateGameCommand request, CancellationToken cancellationToken)
+        private readonly IGameRepository _repo;
+        private readonly IMapper _mapper;
+        
+
+        public CreateGameHandler(IGameRepository repo, IMapper mapper)
         {
-            throw new NotImplementedException();
+            _repo = repo;
+            _mapper = mapper;
+        }
+
+        public async Task<Guid> Handle(CreateGameCommand request, CancellationToken cancellationToken)
+        {
+            var game = _mapper.Map<Game>(request.newGame);
+
+            await _repo.AddAsync(game);
+
+            return game.Id;
+            
         }
     }
 }
