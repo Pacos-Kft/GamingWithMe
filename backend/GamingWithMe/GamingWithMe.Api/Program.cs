@@ -5,7 +5,9 @@ using GamingWithMe.Application.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Filters;
+using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Infrastructure.Repositories;
+using GamingWithMe.Application.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,11 +34,29 @@ builder.Services.ConfigureApplicationCookie(opt =>
     opt.SlidingExpiration = true;
 });
 
+builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
+builder.Services.AddScoped<IGameRepository, GameRepository>();
+
+builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"),
+            x => x.MigrationsAssembly("GamingWithMe.Infrastructure")));
 
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddApplication();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateGameHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAllGamesHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetGameByIdHandler>());
+
+
+
+// AutoMapper – scan Profiles
+builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
+
+//builder.Services.AddInfrastructure(builder.Configuration);
+
+//builder.Services.AddApplication();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -53,7 +73,6 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer"
     });
 
-    options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 
 
