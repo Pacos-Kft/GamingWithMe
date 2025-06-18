@@ -1,4 +1,5 @@
 ﻿using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Handlers;
 using GamingWithMe.Application.Mappings;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,9 @@ namespace GamingWithMe.Application.DependencyInjection
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             // MediatR – scan Application assembly
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateGameCommand>());
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateGameHandler>());
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAllGamesHandler>());
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetGameByIdHandler>());
 
 
             // AutoMapper – scan Profiles

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Repositories
 {
-    internal sealed class EfRepository<T> : IAsyncRepository<T> where T : class
+    public sealed class EfRepository<T> : IAsyncRepository<T> where T : class
     {
         private readonly ApplicationDbContext _ctx;
 
