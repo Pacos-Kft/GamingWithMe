@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GamingWithMe.Infrastructure.Repositories
 {
-    internal sealed class GameRepository : IGameRepository
+    public sealed class GameRepository : IGameRepository
     {
         private readonly ApplicationDbContext _context;
 

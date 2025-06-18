@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    internal class CreateGameHandler : IRequestHandler<CreateGameCommand, Guid>
+    public class CreateGameHandler : IRequestHandler<CreateGameCommand, Guid>
     {
         private readonly IGameRepository _repo;
         private readonly IMapper _mapper;
