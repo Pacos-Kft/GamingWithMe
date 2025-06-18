@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record GameDto(string name, string desctiption);
+    public record GameDto(string name, string description);
 }
