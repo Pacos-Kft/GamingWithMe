@@ -14,7 +14,7 @@ namespace GamingWithMe.Domain.Entities
         public string UserId { get; set; }
         public virtual IdentityUser User { get; set; }
 
-        public string Avatar { get; set; }
+        public string AvatarUrl { get; set; }
         public string Bio {  get; set; }
         public ICollection<string> Languages { get; set; }
         //TODO Review
@@ -30,7 +30,7 @@ namespace GamingWithMe.Domain.Entities
         {
             Id = Guid.NewGuid();
             UserId = userId;
-            Avatar = string.Empty;
+            AvatarUrl = string.Empty;
             Bio = string.Empty;
             Languages = new List<string>();
             Earnings = 0;
