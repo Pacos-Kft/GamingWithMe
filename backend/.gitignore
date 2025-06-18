@@ -61,3 +61,6 @@ TestResults/
 *.cache
 *.orig
 *.sln.ide
+
+
+appsettings.json
