@@ -17,8 +17,8 @@ namespace GamingWithMe.Api.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Register(RegisterDto dto, CancellationToken cancellationToken)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken cancellationToken)
         {
             var id = await _mediator.Send(new RegisterProfileCommand(dto), cancellationToken);
             return Ok(id);

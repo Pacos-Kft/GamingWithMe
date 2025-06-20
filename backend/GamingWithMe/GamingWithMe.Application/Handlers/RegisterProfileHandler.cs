@@ -43,7 +43,8 @@ namespace GamingWithMe.Application.Handlers
                     string.Join(';', result.Errors));
             }
 
-            //TODO assign roles
+            var roleName = ToRole(dto.PlayerType);
+            await _userManager.AddToRoleAsync(user, roleName);
 
             switch (dto.PlayerType)
             {
@@ -58,5 +59,14 @@ namespace GamingWithMe.Application.Handlers
             return user.Id;
             
         }
+
+        private static string ToRole(PlayerType type) =>
+            type switch
+        {
+            PlayerType.Esport   => "Esport",
+            PlayerType.Regular  => "Regular",
+            _                   => throw new ArgumentOutOfRangeException(nameof(type))
+         };
+
     }
 }

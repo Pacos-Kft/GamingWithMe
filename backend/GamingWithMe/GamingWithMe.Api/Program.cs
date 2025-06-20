@@ -43,6 +43,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 
 
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateGameHandler>());
@@ -99,5 +100,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using(var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    var roles = new[] { "Admin", "Esport", "Regular" };
+
+    foreach (var item in roles)
+    {
+        if(!await roleManager.RoleExistsAsync(item))
+        {
+            await roleManager.CreateAsync(new IdentityRole(item));
+        }
+    }
+}
 
 app.Run();

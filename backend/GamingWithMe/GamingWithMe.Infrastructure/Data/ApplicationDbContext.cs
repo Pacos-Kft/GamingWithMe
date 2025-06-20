@@ -1,4 +1,5 @@
 ﻿using GamingWithMe.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -21,23 +22,22 @@ namespace GamingWithMe.Infrastructure.Data
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<EsportPlayer>(e =>
+            builder.Entity<PlayerBase>(e =>
             {
+                e.ToTable("Players");
+
                 e.HasKey(p => p.Id);
-                e.HasOne(p => p.User)
-                 .WithMany()
+                e.Property(p => p.Username).IsRequired();
+                e.HasIndex(p => p.Username).IsUnique();
+
+                e.HasOne(p => p.User)                  
+                 .WithMany()                           
                  .HasForeignKey(p => p.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                 .OnDelete(DeleteBehavior.Restrict);  
             });
 
-            builder.Entity<RegularPlayer>(e =>
-            {
-                e.HasKey(p => p.Id);
-                e.HasOne(p => p.User)
-                 .WithMany()
-                 .HasForeignKey(p => p.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);
-            });
+            builder.Entity<EsportPlayer>().ToTable("EsportPlayers");
+            builder.Entity<RegularPlayer>().ToTable("RegularPlayers");
 
 
         }

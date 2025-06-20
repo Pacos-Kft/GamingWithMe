@@ -10,7 +10,7 @@ namespace GamingWithMe.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class GameController : ControllerBase
     {
         private readonly IMediator _mediator;
