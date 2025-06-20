@@ -43,6 +43,8 @@ PublishProfiles/
 secrets.json
 appsettings.Development.json
 appsettings.Local.json
+GamingWithMe/GamingWithMe.Api/appsettings.json
+
 
 # Rider & VS Code
 .vscode/
@@ -61,3 +63,6 @@ TestResults/
 *.cache
 *.orig
 *.sln.ide
+
+
+appsettings.json
