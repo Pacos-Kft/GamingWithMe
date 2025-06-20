@@ -36,6 +36,8 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
+builder.Services.AddScoped<IEsportPlayerReadRepository, EsportPlayerReadRepository>();
+
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"),
@@ -50,11 +52,13 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Cr
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAllGamesHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetGameByIdHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterProfileHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetEsportPlayerProfileHandler>());
 
 
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(EsportPlayerProfile).Assembly));
 
 //builder.Services.AddInfrastructure(builder.Configuration);
 
