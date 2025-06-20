@@ -21,7 +21,7 @@ namespace GamingWithMe.Infrastructure.Repositories
             await _ctx.SaveChangesAsync();
         }
 
-        public async void Delete(T entity)
+        public async Task Delete(T entity)
         {
             _ctx.Set<T>().Remove(entity);
             await _ctx.SaveChangesAsync();
@@ -38,7 +38,7 @@ namespace GamingWithMe.Infrastructure.Repositories
             return await _ctx.Set<T>().AsNoTracking().ToListAsync(ct);
         }
 
-        public async void Update(T entity)
+        public async Task Update(T entity)
         {
             _ctx.Update(entity);
             await _ctx.SaveChangesAsync();
