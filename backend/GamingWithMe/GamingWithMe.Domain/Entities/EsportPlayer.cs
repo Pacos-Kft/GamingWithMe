@@ -9,9 +9,12 @@ namespace GamingWithMe.Domain.Entities
     public class EsportPlayer : PlayerBase
     {
         public string Bio {  get; set; }
-        public ICollection<string> Languages { get; set; }
-        //TODO Review
+        public ICollection<EsportPlayerLanguage> Languages { get; set; }
         public int Earnings { get; set; }
+        public ICollection<EsportGame> Games { get; set; }
+
+        //TODO Review
+
 
         public EsportPlayer() : base()
         {
@@ -21,8 +24,9 @@ namespace GamingWithMe.Domain.Entities
         public EsportPlayer(string userId, string username) : base(userId, username) 
         {
             Bio = string.Empty;
-            Languages = new List<string>();
+            Languages = new List<EsportPlayerLanguage>();
             Earnings = 0;
+            Games = new List<EsportGame>();
         }
     }
 }
