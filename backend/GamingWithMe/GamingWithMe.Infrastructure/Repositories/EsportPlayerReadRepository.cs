@@ -30,9 +30,16 @@ namespace GamingWithMe.Infrastructure.Repositories
             return await _ctx.EsportPlayers
                 .AsNoTracking()
                 .Where(p => p.Username == username)
-                .ProjectTo<EsportPlayerDto>(_mapper.ConfigurationProvider)
+                .Select(p => new EsportPlayerDto(
+                    p.Username,
+                    p.AvatarUrl,
+                    p.Bio,
+                    p.Games.Select(g => g.Game.Name).ToList(),
+                    p.Languages.Select(l => l.Language.Name).ToList(),
+                    p.Earnings,
+                    p.CreatedAt))
                 .FirstOrDefaultAsync();
-                
+
         }
     }
 

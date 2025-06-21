@@ -22,6 +22,7 @@ namespace GamingWithMe.Api.Controllers
         public EsportPlayerController(IMediator mediator) => _mediator = mediator;
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetProfile([FromQuery] string username)
         {
             var profile = await _mediator.Send(new GetEsportPlayerProfileQuery(username));
