@@ -1,4 +1,5 @@
 ﻿using GamingWithMe.Application.Dtos;
+using GamingWithMe.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,14 @@ namespace GamingWithMe.Application.Interfaces
     {
         Task<EsportPlayerDto?> GetProfileByUsernameAsync(
             string username,
+            CancellationToken ct = default);
+
+        Task<EsportPlayer?> GetByIdWithLanguagesAsync(
+            string id,
+            CancellationToken ct = default);
+
+        Task<EsportPlayer?> GetByIdWithGamesAsync(
+            string id,
             CancellationToken ct = default);
     }
 }
