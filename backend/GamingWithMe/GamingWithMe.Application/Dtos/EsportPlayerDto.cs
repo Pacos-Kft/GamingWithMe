@@ -10,6 +10,7 @@ namespace GamingWithMe.Application.Dtos
         string username, 
         string avatarurl, 
         string bio, 
+        List<string> games,
         List<string> languages, 
         int earnings, 
         DateTime joined);

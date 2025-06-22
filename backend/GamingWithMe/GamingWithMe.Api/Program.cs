@@ -36,6 +36,8 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
+builder.Services.AddScoped<IEsportPlayerReadRepository, EsportPlayerReadRepository>();
+
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"),
@@ -43,17 +45,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 
 
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateGameHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAllGamesHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetGameByIdHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterProfileHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetEsportPlayerProfileHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AddLanguageToPlayerHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateLanguageHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAllLanguagesHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DeleteLanguageFromPlayerHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DeleteGameFromPlayerHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AddGameToPlayerHandler>());
 
 
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(EsportPlayerProfile).Assembly));
 
 //builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -99,5 +110,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using(var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    var roles = new[] { "Admin", "Esport", "Regular" };
+
+    foreach (var item in roles)
+    {
+        if(!await roleManager.RoleExistsAsync(item))
+        {
+            await roleManager.CreateAsync(new IdentityRole(item));
+        }
+    }
+}
 
 app.Run();
