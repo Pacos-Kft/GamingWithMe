@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class PlayerBase
+    public class User
     {
         public Guid Id { get; set; }      
 
@@ -20,12 +20,12 @@ namespace GamingWithMe.Domain.Entities
         public DateTime CreatedAt { get; set; }
 
 
-        public PlayerBase()
+        public User()
         {
 
         }
 
-        public PlayerBase(string userId, string username)
+        public User(string userId, string username)
         {
             Id = Guid.NewGuid();
             UserId = userId;

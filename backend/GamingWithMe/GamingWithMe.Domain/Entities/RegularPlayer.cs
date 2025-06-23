@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class RegularPlayer : PlayerBase
+    public class RegularPlayer : User
     {
         public RegularPlayer() : base() { }
         public RegularPlayer(string userId, string username) : base(userId, username) { }

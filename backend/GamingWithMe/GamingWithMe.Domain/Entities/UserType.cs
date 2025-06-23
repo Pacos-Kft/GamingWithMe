@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public enum PlayerType { Regular, Esport }
+    public enum UserType { User, Gamer, Musician, Tiktoker, Youtuber, Just_Chatting }
 }

@@ -10,7 +10,7 @@ namespace GamingWithMe.Domain.Entities
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
-        public ICollection<EsportPlayerLanguage> Players { get; set; }
+        public ICollection<GamerLanguage> Players { get; set; }
 
         public Language()
         {
@@ -20,7 +20,7 @@ namespace GamingWithMe.Domain.Entities
         public Language(string name)
         {
             Name = name;
-            Players = new List<EsportPlayerLanguage>();
+            Players = new List<GamerLanguage>();
         }
     }
 }

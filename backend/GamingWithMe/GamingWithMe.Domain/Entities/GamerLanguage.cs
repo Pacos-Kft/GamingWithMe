@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class EsportPlayerLanguage
+    public class GamerLanguage
     {
         public Guid PlayerId { get; set; }
-        public virtual EsportPlayer Player { get; set; }
+        public virtual Gamer Player { get; set; }
 
         public Guid LanguageId { get; set; }
         public virtual Language Language { get; set; }

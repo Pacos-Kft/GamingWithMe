@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record EsportPlayerDto(
+    public record GamerDto(
         string username, 
         string avatarurl, 
         string bio, 

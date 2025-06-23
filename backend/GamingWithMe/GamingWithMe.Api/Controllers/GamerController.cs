@@ -11,7 +11,7 @@ namespace GamingWithMe.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Esport")]
-    public class EsportPlayerController : ControllerBase
+    public class GamerController : ControllerBase
     {
         //Get profile - done
         //Add language to player - done
@@ -21,13 +21,13 @@ namespace GamingWithMe.Api.Controllers
 
         private readonly IMediator _mediator;
 
-        public EsportPlayerController(IMediator mediator) => _mediator = mediator;
+        public GamerController(IMediator mediator) => _mediator = mediator;
 
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetProfile([FromQuery] string username)
         {
-            var profile = await _mediator.Send(new GetEsportPlayerProfileQuery(username));
+            var profile = await _mediator.Send(new GetGamerProfileQuery(username));
 
             return profile == null ? NotFound() : Ok(profile);
         }
@@ -42,7 +42,7 @@ namespace GamingWithMe.Api.Controllers
                 return NotFound();
             }
 
-            var added = await _mediator.Send(new AddLanguageToPlayerCommand(userId, languageId));
+            var added = await _mediator.Send(new AddLanguageToGamerCommand(userId, languageId));
 
             return Ok(added);
         }
@@ -52,7 +52,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteLanguageFromPlayerCommand(userId, language));
+            var removed = await _mediator.Send(new DeleteLanguageFromGamerCommand(userId, language));
 
             return Ok(removed);
         }
@@ -62,7 +62,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var added = await _mediator.Send(new AddGameToPlayerCommand(userId, gameId));
+            var added = await _mediator.Send(new AddGameToGamerCommand(userId, gameId));
 
             return Ok(added);
         }
@@ -72,7 +72,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteGameFromPlayerCommand(userId, gameId));
+            var removed = await _mediator.Send(new DeleteGameFromGamerCommand(userId, gameId));
 
             return Ok(removed);
         }

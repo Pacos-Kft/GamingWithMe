@@ -15,18 +15,18 @@ namespace GamingWithMe.Infrastructure.Data
         public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Game> Games => Set<Game>();
-        public DbSet<EsportPlayer> EsportPlayers => Set<EsportPlayer>();
+        public DbSet<Gamer> EsportPlayers => Set<Gamer>();
         public DbSet<RegularPlayer> RegularPlayers => Set<RegularPlayer>();
-        public DbSet<EsportGame> EsportGames => Set<EsportGame>();
+        public DbSet<GamerGame> EsportGames => Set<GamerGame>();
         public DbSet<Language> Languages => Set<Language>();
-        public DbSet<EsportPlayerLanguage> EsportPlayerLanguages => Set<EsportPlayerLanguage>();
+        public DbSet<GamerLanguage> EsportPlayerLanguages => Set<GamerLanguage>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<PlayerBase>(e =>
+            builder.Entity<User>(e =>
             {
                 e.ToTable("Players");
 
@@ -40,10 +40,10 @@ namespace GamingWithMe.Infrastructure.Data
                  .OnDelete(DeleteBehavior.Restrict);  
             });
 
-            builder.Entity<EsportPlayer>().ToTable("EsportPlayers");
+            builder.Entity<Gamer>().ToTable("EsportPlayers");
             builder.Entity<RegularPlayer>().ToTable("RegularPlayers");
 
-            builder.Entity<EsportGame>(x =>
+            builder.Entity<GamerGame>(x =>
             {
                 x.HasKey(eg => new { eg.PlayerId, eg.GameId });
 
@@ -56,7 +56,7 @@ namespace GamingWithMe.Infrastructure.Data
                 .HasForeignKey(ep => ep.GameId);
             });
 
-            builder.Entity<EsportPlayerLanguage>(x =>
+            builder.Entity<GamerLanguage>(x =>
             {
                 x.HasKey(epl => new { epl.PlayerId, epl.LanguageId });
 

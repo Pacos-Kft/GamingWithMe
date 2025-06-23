@@ -15,10 +15,10 @@ namespace GamingWithMe.Application.Handlers
     public class RegisterProfileHandler : IRequestHandler<RegisterProfileCommand, string>
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly IAsyncRepository<EsportPlayer> _esportRepo;
-        private readonly IAsyncRepository<PlayerBase> _regularRepo;
+        private readonly IAsyncRepository<Gamer> _esportRepo;
+        private readonly IAsyncRepository<User> _regularRepo;
 
-        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<EsportPlayer> esportRepo, IAsyncRepository<PlayerBase> regularRepo)
+        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<Gamer> esportRepo, IAsyncRepository<User> regularRepo)
         {
             _userManager = userManager;
             _esportRepo = esportRepo;
@@ -48,11 +48,12 @@ namespace GamingWithMe.Application.Handlers
 
             switch (dto.PlayerType)
             {
-                case PlayerType.Esport:
-                   await _esportRepo.AddAsync(new EsportPlayer(user.Id, dto.username));
+                case UserType.Gamer:
+                   await _esportRepo.AddAsync(new Gamer(user.Id, dto.username));
                     break;
-                case PlayerType.Regular:
-                    await _regularRepo.AddAsync(new RegularPlayer(user.Id, dto.username));
+                case UserType.User:
+                    //new User
+                    //await _regularRepo.AddAsync(/*new RegularPlayer(user.Id, dto.username)*/);
                     break;
 
             }
@@ -60,11 +61,11 @@ namespace GamingWithMe.Application.Handlers
             
         }
 
-        private static string ToRole(PlayerType type) =>
+        private static string ToRole(UserType type) =>
             type switch
         {
-            PlayerType.Esport   => "Esport",
-            PlayerType.Regular  => "Regular",
+            UserType.Gamer   => "Esport",
+            UserType.User  => "Regular",
             _                   => throw new ArgumentOutOfRangeException(nameof(type))
          };
 
