@@ -7,6 +7,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record AddGameToPlayerCommand(string userId, Guid gameId) : IRequest<bool>;
-    
+    public record DeleteGameFromGamerCommand(string userId, Guid gameId) : IRequest<bool>;
 }

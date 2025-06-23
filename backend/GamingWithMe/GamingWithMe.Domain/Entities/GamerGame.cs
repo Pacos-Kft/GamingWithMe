@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class EsportGame
+    public class GamerGame
     {
         public Guid PlayerId { get; set; }
-        public virtual EsportPlayer Player { get; set; }
+        public virtual Gamer Player { get; set; }
 
         public Guid GameId { get; set; }
         public virtual Game Game { get; set; }
 
-        public EsportGame()
+        public GamerGame()
         {
             
         }

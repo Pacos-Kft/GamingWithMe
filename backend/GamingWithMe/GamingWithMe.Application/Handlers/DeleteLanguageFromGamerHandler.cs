@@ -10,27 +10,27 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class DeleteLanguageFromPlayerHandler : IRequestHandler<DeleteLanguageFromPlayerCommand, bool>
+    public class DeleteLanguageFromGamerHandler : IRequestHandler<DeleteLanguageFromGamerCommand, bool>
     {
-        private readonly IAsyncRepository<EsportPlayer> _playerRepo;
-        private readonly IEsportPlayerReadRepository _esportRepo;
+        private readonly IAsyncRepository<Gamer> _playerRepo;
+        private readonly IGamerReadRepository _esportRepo;
         private readonly IAsyncRepository<Language> _languageRepo;
 
-        public DeleteLanguageFromPlayerHandler(
-            IAsyncRepository<EsportPlayer> playerRepo,
+        public DeleteLanguageFromGamerHandler(
+            IAsyncRepository<Gamer> playerRepo,
             IAsyncRepository<Language> languageRepo,
-            IEsportPlayerReadRepository esportRepo)
+            IGamerReadRepository esportRepo)
         {
             _playerRepo = playerRepo;
             _languageRepo = languageRepo;
             _esportRepo = esportRepo;
         }
 
-        public async Task<bool> Handle(DeleteLanguageFromPlayerCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(DeleteLanguageFromGamerCommand request, CancellationToken cancellationToken)
         {
             var player = await _esportRepo.GetByIdWithLanguagesAsync(request.userId, cancellationToken);
 
-            if (player is not EsportPlayer esportPlayer)
+            if (player is not Gamer esportPlayer)
                 throw new InvalidOperationException("Player not found or not an Esport player.");
 
             var language = (await _languageRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.Name == request.language);

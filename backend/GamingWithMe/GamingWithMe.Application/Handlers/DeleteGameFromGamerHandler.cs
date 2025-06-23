@@ -10,24 +10,24 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class DeleteGameFromPlayerHandler : IRequestHandler<DeleteGameFromPlayerCommand, bool>
+    public class DeleteGameFromGamerHandler : IRequestHandler<DeleteGameFromGamerCommand, bool>
     {
-        private readonly IAsyncRepository<EsportPlayer> _playerRepository;
+        private readonly IAsyncRepository<Gamer> _playerRepository;
         private readonly IAsyncRepository<Game> _gameRepository;
-        private readonly IEsportPlayerReadRepository esportPlayerReadRepository;
+        private readonly IGamerReadRepository esportPlayerReadRepository;
 
-        public DeleteGameFromPlayerHandler(IAsyncRepository<EsportPlayer> playerRepository, IAsyncRepository<Game> gameRepository, IEsportPlayerReadRepository esportPlayerReadRepository)
+        public DeleteGameFromGamerHandler(IAsyncRepository<Gamer> playerRepository, IAsyncRepository<Game> gameRepository, IGamerReadRepository esportPlayerReadRepository)
         {
             _playerRepository = playerRepository;
             _gameRepository = gameRepository;
             this.esportPlayerReadRepository = esportPlayerReadRepository;
         }
 
-        public async Task<bool> Handle(DeleteGameFromPlayerCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(DeleteGameFromGamerCommand request, CancellationToken cancellationToken)
         {
             var player = await esportPlayerReadRepository.GetByIdWithGamesAsync(request.userId, cancellationToken);
 
-            if (player is not EsportPlayer esportPlayer)
+            if (player is not Gamer esportPlayer)
                 throw new InvalidOperationException("Player not found or not an Esport player.");
 
             var game = await _gameRepository.GetByIdAsync(request.gameId, cancellationToken);

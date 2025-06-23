@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Interfaces
 {
-    public interface IEsportPlayerReadRepository
+    public interface IGamerReadRepository
     {
-        Task<EsportPlayerDto?> GetProfileByUsernameAsync(
+        Task<GamerDto?> GetProfileByUsernameAsync(
             string username,
             CancellationToken ct = default);
 
-        Task<EsportPlayer?> GetByIdWithLanguagesAsync(
+        Task<Gamer?> GetByIdWithLanguagesAsync(
             string id,
             CancellationToken ct = default);
 
-        Task<EsportPlayer?> GetByIdWithGamesAsync(
+        Task<Gamer?> GetByIdWithGamesAsync(
             string id,
             CancellationToken ct = default);
     }

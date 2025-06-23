@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Mappings
 {
-    public class EsportPlayerProfile : Profile
+    public class GamerProfile : Profile
     {
-        public EsportPlayerProfile()
+        public GamerProfile()
         {
-            CreateMap<EsportPlayer, EsportPlayerDto>()
+            CreateMap<Gamer, GamerDto>()
                 .ForMember(d => d.games,
                     opt => opt.MapFrom(src => src.Games.Select(g => g.Game.Name)))
                 .ForMember(d => d.languages,

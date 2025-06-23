@@ -10,16 +10,16 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class AddLanguageToPlayerHandler : IRequestHandler<AddLanguageToPlayerCommand, Guid>
+    public class AddLanguageToGamerHandler : IRequestHandler<AddLanguageToGamerCommand, Guid>
     {
-        private readonly IAsyncRepository<EsportPlayer> _playerRepo;
-        private readonly IEsportPlayerReadRepository _esportRepo;
+        private readonly IAsyncRepository<Gamer> _playerRepo;
+        private readonly IGamerReadRepository _esportRepo;
         private readonly IAsyncRepository<Language> _languageRepo;
 
-        public AddLanguageToPlayerHandler(
-            IAsyncRepository<EsportPlayer> playerRepo,
+        public AddLanguageToGamerHandler(
+            IAsyncRepository<Gamer> playerRepo,
             IAsyncRepository<Language> languageRepo,
-            IEsportPlayerReadRepository esportRepo)
+            IGamerReadRepository esportRepo)
         {
             _playerRepo = playerRepo;
             _languageRepo = languageRepo;
@@ -27,11 +27,11 @@ namespace GamingWithMe.Application.Handlers
         }
 
 
-        public async Task<Guid> Handle(AddLanguageToPlayerCommand request, CancellationToken cancellationToken)
+        public async Task<Guid> Handle(AddLanguageToGamerCommand request, CancellationToken cancellationToken)
         {
             var player = await _esportRepo.GetByIdWithLanguagesAsync(request.userId, cancellationToken);
 
-            if (player is not EsportPlayer esportPlayer)
+            if (player is not Gamer esportPlayer)
                 throw new InvalidOperationException("Player not found or not an Esport player.");
 
             var language = await _languageRepo.GetByIdAsync(request.LanguageId, cancellationToken);
@@ -41,7 +41,7 @@ namespace GamingWithMe.Application.Handlers
             var alreadyHasLanguage = esportPlayer.Languages.Any(x=> x.LanguageId == language.Id);
 
             if (!alreadyHasLanguage) {
-                esportPlayer.Languages.Add(new EsportPlayerLanguage
+                esportPlayer.Languages.Add(new GamerLanguage
                 {
                     LanguageId = request.LanguageId,
                     PlayerId = esportPlayer.Id

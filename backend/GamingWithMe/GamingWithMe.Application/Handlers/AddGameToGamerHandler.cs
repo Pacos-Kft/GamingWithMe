@@ -11,24 +11,24 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class AddGameToPlayerHandler : IRequestHandler<AddGameToPlayerCommand, bool>
+    public class AddGameToGamerHandler : IRequestHandler<AddGameToGamerCommand, bool>
     {
-        private readonly IAsyncRepository<EsportPlayer> _playerRepository;
+        private readonly IAsyncRepository<Gamer> _playerRepository;
         private readonly IAsyncRepository<Game> _gameRepository;
-        private readonly IEsportPlayerReadRepository esportPlayerReadRepository;
+        private readonly IGamerReadRepository esportPlayerReadRepository;
 
-        public AddGameToPlayerHandler(IAsyncRepository<EsportPlayer> playerRepository, IAsyncRepository<Game> gameRepository, IEsportPlayerReadRepository esportPlayerReadRepository)
+        public AddGameToGamerHandler(IAsyncRepository<Gamer> playerRepository, IAsyncRepository<Game> gameRepository, IGamerReadRepository esportPlayerReadRepository)
         {
             _playerRepository = playerRepository;
             _gameRepository = gameRepository;
             this.esportPlayerReadRepository = esportPlayerReadRepository;
         }
 
-        public async Task<bool> Handle(AddGameToPlayerCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(AddGameToGamerCommand request, CancellationToken cancellationToken)
         {
             var player = await esportPlayerReadRepository.GetByIdWithGamesAsync(request.userId, cancellationToken);
 
-            if (player is not EsportPlayer esportPlayer)
+            if (player is not Gamer esportPlayer)
                 throw new InvalidOperationException("Player not found or not an Esport player.");
 
             var game = await _gameRepository.GetByIdAsync(request.gameId, cancellationToken);
@@ -38,7 +38,7 @@ namespace GamingWithMe.Application.Handlers
 
             if (!alreadyHasGame)
             {
-                esportPlayer.Games.Add(new EsportGame { GameId = game.Id, PlayerId = esportPlayer.Id});
+                esportPlayer.Games.Add(new GamerGame { GameId = game.Id, PlayerId = esportPlayer.Id});
             }
 
             await _playerRepository.Update(esportPlayer);

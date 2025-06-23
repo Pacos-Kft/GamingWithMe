@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace GamingWithMe.Infrastructure.Repositories
 {
     public sealed class EsportPlayerReadRepository
-    : IEsportPlayerReadRepository
+    : IGamerReadRepository
     {
         private readonly ApplicationDbContext _ctx;
         private readonly IMapper _mapper;
@@ -37,27 +37,27 @@ namespace GamingWithMe.Infrastructure.Repositories
         //    return await query.FirstOrDefaultAsync(p => p.UserId == id, ct);
         //}
 
-        public async Task<EsportPlayer?> GetByIdWithLanguagesAsync(string id, CancellationToken ct = default)
+        public async Task<Gamer?> GetByIdWithLanguagesAsync(string id, CancellationToken ct = default)
         {
             return await _ctx.EsportPlayers
             .Include(p => p.Languages)
             .FirstOrDefaultAsync(p => p.UserId == id);
         }
 
-        public async Task<EsportPlayer?> GetByIdWithGamesAsync(string id, CancellationToken ct = default)
+        public async Task<Gamer?> GetByIdWithGamesAsync(string id, CancellationToken ct = default)
         {
             return await _ctx.EsportPlayers
             .Include(p => p.Games)
             .FirstOrDefaultAsync(p => p.UserId == id);
         }
 
-        public async Task<EsportPlayerDto?> GetProfileByUsernameAsync(
+        public async Task<GamerDto?> GetProfileByUsernameAsync(
             string username, CancellationToken ct = default)
         {
             return await _ctx.EsportPlayers
                 .AsNoTracking()
                 .Where(p => p.Username == username)
-                .Select(p => new EsportPlayerDto(
+                .Select(p => new GamerDto(
                     p.Username,
                     p.AvatarUrl,
                     p.Bio,
