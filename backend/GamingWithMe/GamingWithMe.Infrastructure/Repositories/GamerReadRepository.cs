@@ -14,39 +14,39 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Repositories
 {
-    public sealed class EsportPlayerReadRepository
+    public sealed class GamerReadRepository
     : IGamerReadRepository
     {
         private readonly ApplicationDbContext _ctx;
         private readonly IMapper _mapper;
 
-        public EsportPlayerReadRepository(ApplicationDbContext ctx, IMapper mapper)
+        public GamerReadRepository(ApplicationDbContext ctx, IMapper mapper)
         {
             _ctx = ctx;
             _mapper = mapper;
         }
 
         //TODO consider this
-        //public async Task<EsportPlayer?> GetByIdAsync(string id, CancellationToken ct = default, params Expression<Func<EsportPlayer, object>>[] includes)
-        //{
-        //    IQueryable<EsportPlayer> query = _ctx.EsportPlayers;
+        public async Task<Gamer?> GetByIdAsync(string id, CancellationToken ct = default, params Expression<Func<Gamer, object>>[] includes)
+        {
+            IQueryable<Gamer> query = _ctx.Gamers;
 
-        //    foreach (var include in includes)
-        //        query = query.Include(include);
+            foreach (var include in includes)
+                query = query.Include(include);
 
-        //    return await query.FirstOrDefaultAsync(p => p.UserId == id, ct);
-        //}
+            return await query.FirstOrDefaultAsync(p => p.UserId == id, ct);
+        }
 
         public async Task<Gamer?> GetByIdWithLanguagesAsync(string id, CancellationToken ct = default)
         {
-            return await _ctx.EsportPlayers
+            return await _ctx.Gamers
             .Include(p => p.Languages)
             .FirstOrDefaultAsync(p => p.UserId == id);
         }
 
         public async Task<Gamer?> GetByIdWithGamesAsync(string id, CancellationToken ct = default)
         {
-            return await _ctx.EsportPlayers
+            return await _ctx.Gamers
             .Include(p => p.Games)
             .FirstOrDefaultAsync(p => p.UserId == id);
         }
@@ -54,7 +54,7 @@ namespace GamingWithMe.Infrastructure.Repositories
         public async Task<GamerDto?> GetProfileByUsernameAsync(
             string username, CancellationToken ct = default)
         {
-            return await _ctx.EsportPlayers
+            return await _ctx.Gamers
                 .AsNoTracking()
                 .Where(p => p.Username == username)
                 .Select(p => new GamerDto(
