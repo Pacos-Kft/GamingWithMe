@@ -71,6 +71,23 @@ namespace GamingWithMe.Infrastructure.Data
                 .HasForeignKey(epl => epl.LanguageId);
             });
 
+            builder.Entity<Booking>(b =>
+            {
+                b.HasKey(x => x.Id);
+
+                b.HasOne(x => x.Gamer)
+                    .WithMany()
+                    .HasForeignKey(x => x.GamerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.User)
+                    .WithMany(u => u.Bookings) 
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+
 
 
         }
