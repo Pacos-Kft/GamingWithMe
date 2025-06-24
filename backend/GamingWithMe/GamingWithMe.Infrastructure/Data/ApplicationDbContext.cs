@@ -36,7 +36,7 @@ namespace GamingWithMe.Infrastructure.Data
                 e.Property(p => p.Username).IsRequired();
                 e.HasIndex(p => p.Username).IsUnique();
 
-                e.HasOne(p => p.User)                  
+                e.HasOne(p => p.IdentityUser)                  
                  .WithMany()                           
                  .HasForeignKey(p => p.UserId)
                  .OnDelete(DeleteBehavior.Restrict);  

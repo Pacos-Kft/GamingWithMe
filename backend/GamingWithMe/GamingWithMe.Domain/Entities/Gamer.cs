@@ -15,7 +15,6 @@ namespace GamingWithMe.Domain.Entities
 
         public bool IsActive { get; set; }
         public ICollection<GamerAvailability> WeeklyAvailability { get; set; }
-        public ICollection<Booking> Bookings { get; set; }
 
         //TODO Review
 
@@ -33,7 +32,6 @@ namespace GamingWithMe.Domain.Entities
             Games = new List<GamerGame>();
             IsActive = false;
             WeeklyAvailability = new List<GamerAvailability>();
-            Bookings = new List<Booking>();
         }
     }
 }

@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record TimeRangeDto(string From, string Duration);
+    public record BookingDetailsDto(string day, TimeRangeDto timeRange);
 }

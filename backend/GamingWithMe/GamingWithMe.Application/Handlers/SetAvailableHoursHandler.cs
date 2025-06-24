@@ -38,9 +38,9 @@ namespace GamingWithMe.Application.Handlers
 
                 foreach (var timeRange in timeRanges)
                 {
-                    if (!TimeSpan.TryParse(timeRange.From, out var start) || !TimeSpan.TryParse(timeRange.To, out var end))
+                    if (!TimeSpan.TryParse(timeRange.From, out var start) || !TimeSpan.TryParse(timeRange.Duration, out var end))
                     {
-                        throw new FormatException($"Invalid time format: {timeRange.From} - {timeRange.To}");
+                        throw new FormatException($"Invalid time format: {timeRange.From} - {timeRange.Duration}");
                     }
 
                     if (start >= end)

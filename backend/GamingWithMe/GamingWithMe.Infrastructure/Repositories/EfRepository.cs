@@ -1,9 +1,11 @@
 ﻿using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Domain.Entities;
 using GamingWithMe.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,6 +28,16 @@ namespace GamingWithMe.Infrastructure.Repositories
             _ctx.Set<T>().Remove(entity);
             await _ctx.SaveChangesAsync();
 
+        }
+
+        public async Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default, params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _ctx.Set<T>();
+
+            foreach (var include in includes)
+                query = query.Include(include);
+
+            return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, ct);
         }
 
         public async Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default)

@@ -17,11 +17,6 @@ namespace GamingWithMe.Api.Controllers
     [Authorize(Roles = "Esport")]
     public class GamerController : ControllerBase
     {
-        //PUT /api/gamer/availability — set weekly schedule. - done
-
-        //PUT /api/gamer/status/active — set IsActive to true/false. - done
-        
-        //POST /api/bookings — book a time slot.
 
 
         private readonly IMediator _mediator;
