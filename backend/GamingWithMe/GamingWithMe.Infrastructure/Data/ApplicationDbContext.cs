@@ -15,11 +15,13 @@ namespace GamingWithMe.Infrastructure.Data
         public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Game> Games => Set<Game>();
-        public DbSet<Gamer> EsportPlayers => Set<Gamer>();
-        public DbSet<RegularPlayer> RegularPlayers => Set<RegularPlayer>();
-        public DbSet<GamerGame> EsportGames => Set<GamerGame>();
+        public DbSet<Gamer> Gamers => Set<Gamer>();
+        //public DbSet<User> Users => Set<User>();
+        public DbSet<GamerGame> GamerGames => Set<GamerGame>();
         public DbSet<Language> Languages => Set<Language>();
-        public DbSet<GamerLanguage> EsportPlayerLanguages => Set<GamerLanguage>();
+        public DbSet<GamerLanguage> GamerLanguages => Set<GamerLanguage>();
+        public DbSet<Booking> Bookings => Set<Booking>();
+        public DbSet<GamerAvailability> GamerAvailabilities => Set<GamerAvailability>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -28,7 +30,7 @@ namespace GamingWithMe.Infrastructure.Data
 
             builder.Entity<User>(e =>
             {
-                e.ToTable("Players");
+                e.ToTable("Users");
 
                 e.HasKey(p => p.Id);
                 e.Property(p => p.Username).IsRequired();
@@ -40,8 +42,8 @@ namespace GamingWithMe.Infrastructure.Data
                  .OnDelete(DeleteBehavior.Restrict);  
             });
 
-            builder.Entity<Gamer>().ToTable("EsportPlayers");
-            builder.Entity<RegularPlayer>().ToTable("RegularPlayers");
+            builder.Entity<Gamer>().ToTable("Gamers");
+            //builder.Entity<User>().ToTable("Users");
 
             builder.Entity<GamerGame>(x =>
             {
