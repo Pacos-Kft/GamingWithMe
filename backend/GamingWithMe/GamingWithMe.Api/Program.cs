@@ -36,7 +36,7 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<IGamerReadRepository, EsportPlayerReadRepository>();
+builder.Services.AddScoped<IGamerReadRepository, GamerReadRepository>();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
