@@ -8,6 +8,6 @@ namespace GamingWithMe.Application.Dtos
 {
     public record WeeklyHoursDto
     {
-        public IDictionary<DayOfWeek, List<TimeRangeDto>> Days { get; init; } = new Dictionary<DayOfWeek, List<TimeRangeDto>>();
+        public IDictionary<DayOfWeek, TimeRangeDto> Days { get; init; } = new Dictionary<DayOfWeek, TimeRangeDto>();
     }
 }

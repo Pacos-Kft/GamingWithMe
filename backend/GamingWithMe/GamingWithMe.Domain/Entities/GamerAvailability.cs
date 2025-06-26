@@ -16,6 +16,8 @@ namespace GamingWithMe.Domain.Entities
         public TimeSpan EndTime { get; set; }   
         public DayOfWeek DayOfWeek { get; set; }
 
+
+
     }
 
 }
