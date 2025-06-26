@@ -16,13 +16,13 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IAsyncRepository<Gamer> _esportRepo;
-        private readonly IAsyncRepository<User> _regularRepo;
+        private readonly IAsyncRepository<User> _userRepo;
 
         public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<Gamer> esportRepo, IAsyncRepository<User> regularRepo)
         {
             _userManager = userManager;
             _esportRepo = esportRepo;
-            _regularRepo = regularRepo;
+            _userRepo = regularRepo;
         }
 
 
@@ -52,8 +52,7 @@ namespace GamingWithMe.Application.Handlers
                    await _esportRepo.AddAsync(new Gamer(user.Id, dto.username));
                     break;
                 case UserType.User:
-                    //new User
-                    //await _regularRepo.AddAsync(/*new RegularPlayer(user.Id, dto.username)*/);
+                    await _userRepo.AddAsync(new User(user.Id, dto.username));
                     break;
 
             }

@@ -4,7 +4,11 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.Intrinsics.X86;
+using System;
 using System.Security.Claims;
+using static System.Reflection.Metadata.BlobBuilder;
+using GamingWithMe.Application.Dtos;
 
 namespace GamingWithMe.Api.Controllers
 {
@@ -13,11 +17,7 @@ namespace GamingWithMe.Api.Controllers
     [Authorize(Roles = "Esport")]
     public class GamerController : ControllerBase
     {
-        //Get profile - done
-        //Add language to player - done
-        //delete langugae from player - done
-        //add game to player - 
-        //delete game from player - 
+
 
         private readonly IMediator _mediator;
 
@@ -75,6 +75,26 @@ namespace GamingWithMe.Api.Controllers
             var removed = await _mediator.Send(new DeleteGameFromGamerCommand(userId, gameId));
 
             return Ok(removed);
+        }
+
+        [HttpPut("status/active")]
+        public async Task<IActionResult> SetIsActive()
+        {
+            var userId = GetUserId();
+            
+            var activity = await _mediator.Send(new SetGamerActivityCommand(userId));
+
+            return Ok(activity);
+        }
+
+        [HttpPut("availability")]
+        public async Task<IActionResult> SetAvailableHours([FromBody] WeeklyHoursDto dto)
+        {
+            var userId = GetUserId();
+
+            var activity = await _mediator.Send(new SetAvailableHoursCommand(userId, dto));
+
+            return Ok(activity);
         }
 
         private string GetUserId()

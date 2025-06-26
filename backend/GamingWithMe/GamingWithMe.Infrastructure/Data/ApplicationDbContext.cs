@@ -15,11 +15,13 @@ namespace GamingWithMe.Infrastructure.Data
         public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Game> Games => Set<Game>();
-        public DbSet<Gamer> EsportPlayers => Set<Gamer>();
-        public DbSet<RegularPlayer> RegularPlayers => Set<RegularPlayer>();
-        public DbSet<GamerGame> EsportGames => Set<GamerGame>();
+        public DbSet<Gamer> Gamers => Set<Gamer>();
+        //public DbSet<User> Users => Set<User>();
+        public DbSet<GamerGame> GamerGames => Set<GamerGame>();
         public DbSet<Language> Languages => Set<Language>();
-        public DbSet<GamerLanguage> EsportPlayerLanguages => Set<GamerLanguage>();
+        public DbSet<GamerLanguage> GamerLanguages => Set<GamerLanguage>();
+        public DbSet<Booking> Bookings => Set<Booking>();
+        public DbSet<GamerAvailability> GamerAvailabilities => Set<GamerAvailability>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -28,20 +30,20 @@ namespace GamingWithMe.Infrastructure.Data
 
             builder.Entity<User>(e =>
             {
-                e.ToTable("Players");
+                e.ToTable("Users");
 
                 e.HasKey(p => p.Id);
                 e.Property(p => p.Username).IsRequired();
                 e.HasIndex(p => p.Username).IsUnique();
 
-                e.HasOne(p => p.User)                  
+                e.HasOne(p => p.IdentityUser)                  
                  .WithMany()                           
                  .HasForeignKey(p => p.UserId)
                  .OnDelete(DeleteBehavior.Restrict);  
             });
 
-            builder.Entity<Gamer>().ToTable("EsportPlayers");
-            builder.Entity<RegularPlayer>().ToTable("RegularPlayers");
+            builder.Entity<Gamer>().ToTable("Gamers");
+            //builder.Entity<User>().ToTable("Users");
 
             builder.Entity<GamerGame>(x =>
             {
@@ -68,6 +70,23 @@ namespace GamingWithMe.Infrastructure.Data
                 .WithMany(g => g.Players)
                 .HasForeignKey(epl => epl.LanguageId);
             });
+
+            builder.Entity<Booking>(b =>
+            {
+                b.HasKey(x => x.Id);
+
+                b.HasOne(x => x.Gamer)
+                    .WithMany()
+                    .HasForeignKey(x => x.GamerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.User)
+                    .WithMany(u => u.Bookings) 
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
 
 
 

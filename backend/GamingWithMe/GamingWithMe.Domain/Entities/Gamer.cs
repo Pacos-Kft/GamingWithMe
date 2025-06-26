@@ -13,6 +13,9 @@ namespace GamingWithMe.Domain.Entities
         public int Earnings { get; set; }
         public ICollection<GamerGame> Games { get; set; }
 
+        public bool IsActive { get; set; }
+        public ICollection<GamerAvailability> WeeklyAvailability { get; set; }
+
         //TODO Review
 
 
@@ -27,6 +30,8 @@ namespace GamingWithMe.Domain.Entities
             Languages = new List<GamerLanguage>();
             Earnings = 0;
             Games = new List<GamerGame>();
+            IsActive = false;
+            WeeklyAvailability = new List<GamerAvailability>();
         }
     }
 }

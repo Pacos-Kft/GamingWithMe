@@ -12,12 +12,14 @@ namespace GamingWithMe.Domain.Entities
         public Guid Id { get; set; }      
 
         public string UserId { get; set; }
-        public virtual IdentityUser User { get; set; }
+        public virtual IdentityUser IdentityUser { get; set; }
 
         public string Username { get; set; }
 
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
+        public ICollection<Booking> Bookings { get; set; }
+
 
 
         public User()
@@ -32,6 +34,8 @@ namespace GamingWithMe.Domain.Entities
             Username = username;
             AvatarUrl = string.Empty;
             CreatedAt = DateTime.UtcNow;
+            Bookings = new List<Booking>();
+
         }
     }
 }

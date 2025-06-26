@@ -36,7 +36,7 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<IGamerReadRepository, EsportPlayerReadRepository>();
+builder.Services.AddScoped<IGamerReadRepository, GamerReadRepository>();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
@@ -59,6 +59,10 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Ge
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DeleteLanguageFromGamerHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DeleteGameFromGamerHandler>());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AddGameToGamerHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SetGamerActivityHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SetAvailableHoursHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingHandler>());
+
 
 
 
