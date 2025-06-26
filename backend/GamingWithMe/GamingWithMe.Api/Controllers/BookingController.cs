@@ -1,7 +1,10 @@
-﻿using MediatR;
+﻿using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Dtos;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace GamingWithMe.Api.Controllers
 {
@@ -14,13 +17,29 @@ namespace GamingWithMe.Api.Controllers
 
         public BookingController(IMediator mediator) => _mediator = mediator;
 
-        [HttpPost]
-        public async Task<ActionResult> Create()
+        [HttpPost("{userid}")]
+        public async Task<ActionResult<BookingDetailsDto>> Create(Guid userid, [FromBody] BookingDetailsDto dto)
         {
+            var userId = GetUserId();
+
+            var booked = await _mediator.Send(new BookingCommand(userid, userId, dto));
 
 
 
-            return Ok();
+
+            return Ok(dto);
+        }
+
+        private string GetUserId()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            return userId;
         }
 
     }
