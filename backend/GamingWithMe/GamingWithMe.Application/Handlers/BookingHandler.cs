@@ -38,6 +38,10 @@ namespace GamingWithMe.Application.Handlers
             if (gamer == null || user == null)
                 throw new InvalidOperationException("Gamer or User not found");
 
+            if (!gamer.IsActive)
+                throw new InvalidOperationException("Gamer is not currently active and cannot accept bookings.");
+
+
 
             if (!DateTime.TryParse(request.BookingDetailsDto.timeRange.From, out var fromTime))
                 throw new InvalidOperationException("Invalid time format: From");
