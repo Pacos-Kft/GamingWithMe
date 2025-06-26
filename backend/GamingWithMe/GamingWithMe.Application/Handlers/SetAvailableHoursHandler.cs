@@ -39,7 +39,6 @@ namespace GamingWithMe.Application.Handlers
             user.WeeklyAvailability.Clear();
 
 
-
             foreach (var kvp in request.Hours.Days)
             {
                 var day = kvp.Key;
