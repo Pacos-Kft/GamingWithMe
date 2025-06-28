@@ -17,6 +17,7 @@ namespace GamingWithMe.Api.Controllers
         private readonly CustomerService _customerService;
         private readonly ChargeService _charge;
         private readonly ProductService _product;
+        private readonly PriceService _priceService;
 
         public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product)
         {
@@ -25,35 +26,68 @@ namespace GamingWithMe.Api.Controllers
             _customerService = customer;
             _charge = charge;
             _product = product;
+            _priceService = new PriceService();
         }
 
         [HttpPost("pay")]
         public IActionResult Pay([FromBody] string PriceId)
         {
-            StripeConfiguration.ApiKey = _model.SecretKey;
-
-            var options = new SessionCreateOptions
+            try
             {
-                LineItems = new List<SessionLineItemOptions>
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                var connectedAccount = "acct_1Rf3tXCHximbn0NA";
+
+                // Retrieve the actual price information
+                var price = _priceService.Get(PriceId);
+                if (price == null)
+                    return BadRequest("Invalid price ID");
+
+                // Calculate fee as 5% of the actual price
+                long applicationFee = (long)(price.UnitAmount * 0.20);
+
+                var options = new SessionCreateOptions
                 {
-                    new SessionLineItemOptions
+                    LineItems = new List<SessionLineItemOptions>
                     {
-                        Price = PriceId,
-                        Quantity = 1,
+                        new SessionLineItemOptions
+                        {
+                            Price = PriceId,
+                            Quantity = 1,
+                        }
+                    },
+                    Mode = "payment",
+                    SuccessUrl = "http://localhost:5173/success",
+                    CancelUrl = "http://localhost:5173",
+                    PaymentIntentData = new SessionPaymentIntentDataOptions
+                    {
+                        ApplicationFeeAmount = applicationFee,
+                        TransferData = new SessionPaymentIntentDataTransferDataOptions
+                        {
+                            Destination = connectedAccount
+                        }
                     }
-                },
-                Mode = "payment",
-                SuccessUrl = "http://localhost:5173/success",
-                CancelUrl = "http://localhost:5173"
-            };
+                };
 
-            options.Customer = "cus_SaCXeZDWJH5t4L";
+                options.Customer = "cus_SaCXeZDWJH5t4L";
 
-            var service = new SessionService();
+                var service = new SessionService();
+                Session session = service.Create(options);
 
-            Session session = service.Create(options);
-
-            return Ok(session.Url);
+                // Return more details for debugging
+                return Ok(new
+                {
+                    CheckoutUrl = session.Url,
+                    PriceAmount = price.UnitAmount,
+                    ApplicationFee = applicationFee,
+                    SessionId = session.Id,
+                    ConnectedAccount = connectedAccount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error processing payment: {ex.Message}");
+            }
         }
 
         [HttpPost("create-customer")]
