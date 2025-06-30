@@ -58,6 +58,9 @@ builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<ChargeService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<AccountService>();
+builder.Services.AddScoped<AccountLinkService>();
+builder.Services.AddScoped<PriceService>();
 
 
 
