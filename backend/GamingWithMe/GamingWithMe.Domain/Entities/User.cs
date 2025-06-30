@@ -14,6 +14,9 @@ namespace GamingWithMe.Domain.Entities
         public string UserId { get; set; }
         public virtual IdentityUser IdentityUser { get; set; }
 
+        public string StripeAccount {  get; set; }
+        public string StripeCustomer {  get; set; }
+
         public string Username { get; set; }
 
         public string AvatarUrl { get; set; }
@@ -35,6 +38,8 @@ namespace GamingWithMe.Domain.Entities
             AvatarUrl = string.Empty;
             CreatedAt = DateTime.UtcNow;
             Bookings = new List<Booking>();
+            StripeAccount = string.Empty;
+            StripeCustomer = string.Empty;
 
         }
     }

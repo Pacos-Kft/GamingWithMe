@@ -1,13 +1,29 @@
-﻿using GamingWithMe.Domain.Entities;
+﻿using AutoMapper;
+using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Dtos;
+using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
 using Stripe;
 using Stripe.Checkout;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace GamingWithMe.Api.Controllers
 {
+    public class PaymentRequest
+    {
+        public string PriceId { get; set; }
+        public BookingCommand BookingDetails { get; set; }
+    }
+
+
     [Route("api/[controller]")]
     [ApiController]
     public class StripeController : ControllerBase
@@ -18,28 +34,64 @@ namespace GamingWithMe.Api.Controllers
         private readonly ChargeService _charge;
         private readonly ProductService _product;
         private readonly PriceService _priceService;
+        private readonly IMediator _mediator;
+        private readonly string _webhookSecret;
+        private readonly IAsyncRepository<Gamer> _gamerRepo;
 
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product)
+
+
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<Gamer> gamerRepo, PriceService priceService)
         {
             _model = model.Value;
             _token = token;
             _customerService = customer;
             _charge = charge;
             _product = product;
-            _priceService = new PriceService();
+            _mediator = mediator;
+            // It's recommended to store your webhook secret in appsettings.json or another secure configuration provider
+            _webhookSecret = "whsec_a502365718c2eabc23f204e03d5e5d26f9fc4bc595de1303ea802e992dd86bd3"; // Replace with your actual webhook signing secret
+            _priceService = priceService;
+            _gamerRepo = gamerRepo;
         }
 
-        [HttpPost("pay")]
-        public IActionResult Pay([FromBody] string PriceId)
+        [HttpPost("pay/{mentorId}")]
+        [Authorize]
+        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] BookingDetailsDto request)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var cmd = new BookingCommand(mentorId, userId, request);
+
+            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x=> x.Products);
+
+            if (gamer == null) {
+                return BadRequest();
+            }
+
+            var product = gamer.Products.FirstOrDefault();
+
+            if (product == null) {
+                return NotFound();
+            }
+
+            var connectedAccount = gamer.StripeAccount;
+
+
             try
             {
+                var validationCommand = new ValidateBookingCommand(cmd);
+                await _mediator.Send(validationCommand);
+
                 StripeConfiguration.ApiKey = _model.SecretKey;
 
-                var connectedAccount = "acct_1Rf3tXCHximbn0NA";
 
                 // Retrieve the actual price information
-                var price = _priceService.Get(PriceId);
+                var price = _priceService.Get(product.StripePriceId);
                 if (price == null)
                     return BadRequest("Invalid price ID");
 
@@ -52,7 +104,7 @@ namespace GamingWithMe.Api.Controllers
                     {
                         new SessionLineItemOptions
                         {
-                            Price = PriceId,
+                            Price = product.StripePriceId,
                             Quantity = 1,
                         }
                     },
@@ -66,10 +118,14 @@ namespace GamingWithMe.Api.Controllers
                         {
                             Destination = connectedAccount
                         }
+                    },
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "bookingDetails", JsonSerializer.Serialize(request) }
                     }
                 };
 
-                options.Customer = "cus_SaCXeZDWJH5t4L";
+                //options.Customer = "cus_SaCXeZDWJH5t4L";
 
                 var service = new SessionService();
                 Session session = service.Create(options);
@@ -84,10 +140,64 @@ namespace GamingWithMe.Api.Controllers
                     ConnectedAccount = connectedAccount
                 });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error processing payment: {ex.Message}");
             }
+        }
+
+        [HttpPost("webhook")]
+        public async Task<IActionResult> Webhook()
+        {
+            var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+            try
+            {
+                var stripeEvent = EventUtility.ConstructEvent(json,
+                    Request.Headers["Stripe-Signature"], _webhookSecret);
+
+                // Handle the event
+                if (stripeEvent.Type == "checkout.session.completed")
+                {
+                    var session = stripeEvent.Data.Object as Session;
+                    if (session.PaymentStatus == "paid")
+                    {
+                        // Retrieve booking details from metadata
+                        var bookingDetailsJson = session.Metadata["bookingDetails"];
+                        var bookingCommand = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
+
+                        // Create the booking
+                        await _mediator.Send(bookingCommand);
+                    }
+                }
+
+                return Ok();
+            }
+            catch (StripeException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("create-product")]
+        [Authorize]
+        public async Task<IActionResult> CreateProduct([FromBody] NewProductDto productDto)
+        {
+            StripeConfiguration.ApiKey = _model.SecretKey;
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var product = await _mediator.Send(new CreateProductCommand(userId,productDto));
+
+            return Ok(product);
         }
 
         [HttpPost("create-customer")]
@@ -116,5 +226,27 @@ namespace GamingWithMe.Api.Controllers
 
             return Ok(products);
         }
+
+        [HttpPost("create-connected-account")]
+        [Authorize]
+        public async Task<IActionResult> CreateConnectedAccount()
+        {
+            StripeConfiguration.ApiKey = _model.SecretKey;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if(userId == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var (link,account) = await _mediator.Send(new CreateStripeAccountCommand(userId));
+
+            return Ok(new
+            {
+                OnboardingUrl = link.Url,
+                ConnectedAccountId = account.Id 
+            });
+        }
+
     }
 }

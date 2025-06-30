@@ -22,6 +22,7 @@ namespace GamingWithMe.Infrastructure.Data
         public DbSet<GamerLanguage> GamerLanguages => Set<GamerLanguage>();
         public DbSet<Booking> Bookings => Set<Booking>();
         public DbSet<GamerAvailability> GamerAvailabilities => Set<GamerAvailability>();
+        public DbSet<Product> Products => Set<Product>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
