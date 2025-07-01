@@ -121,7 +121,9 @@ namespace GamingWithMe.Api.Controllers
                     },
                     Metadata = new Dictionary<string, string>
                     {
-                        { "bookingDetails", JsonSerializer.Serialize(request) }
+                        { "bookingDetails", JsonSerializer.Serialize(cmd) },
+                        { "mentorId", mentorId.ToString() },
+                        { "userId", userId }
                     }
                 };
 
