@@ -16,8 +16,19 @@ namespace GamingWithMe.Domain.Entities
         public TimeSpan EndTime { get; set; }   
         public DayOfWeek DayOfWeek { get; set; }
 
+        public GamerAvailability()
+        {
+            
+        }
 
-
+        public GamerAvailability(Guid gamerId, TimeSpan startTime, TimeSpan endTime, DayOfWeek dayOfWeek)
+        {
+            Id = Guid.NewGuid();
+            GamerId = gamerId;
+            StartTime = startTime;
+            EndTime = endTime;
+            DayOfWeek = dayOfWeek;
+        }
     }
 
 }

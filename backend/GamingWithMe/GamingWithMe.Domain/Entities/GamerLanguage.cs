@@ -14,6 +14,11 @@ namespace GamingWithMe.Domain.Entities
         public Guid LanguageId { get; set; }
         public virtual Language Language { get; set; }
 
+        public GamerLanguage()
+        {
+            
+        }
+
 
     }
 }
