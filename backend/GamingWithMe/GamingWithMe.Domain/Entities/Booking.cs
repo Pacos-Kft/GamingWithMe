@@ -19,19 +19,21 @@ namespace GamingWithMe.Domain.Entities
         public DateTime StartTime { get; set; }
         public TimeSpan Duration { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string PaymentIntentId { get; set; }
 
         public Booking()
         {
             
         }
 
-        public Booking(Guid GamerId, Guid UserId, DateTime StartTime, TimeSpan Duration)
+        public Booking(Guid GamerId, Guid UserId, DateTime StartTime, TimeSpan Duration, string paymentIntentId)
         {
             this.GamerId = GamerId;
             this.UserId = UserId;
             this.StartTime = StartTime;
             this.Duration = Duration;
             CreatedAt = DateTime.UtcNow;
+            PaymentIntentId = paymentIntentId;
         }
 
     }

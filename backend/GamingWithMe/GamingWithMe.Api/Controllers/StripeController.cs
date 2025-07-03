@@ -2,6 +2,7 @@
 using GamingWithMe.Application.Commands;
 using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Application.Queries;
 using GamingWithMe.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -65,7 +66,7 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var cmd = new BookingCommand(mentorId, userId, request);
+            var cmd = new BookingCommand(mentorId, userId,"", request);
 
             var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x=> x.Products);
 
@@ -152,6 +153,63 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
+        [HttpPost("refund/{bookingId}")]
+        [Authorize]
+        public async Task<IActionResult> RefundPayment(Guid bookingId)
+        {
+            try
+            {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                // 1. Get the booking
+                var booking = await _mediator.Send(new GetBookingByIdQuery(bookingId));
+                if (booking == null)
+                    return NotFound("Booking not found");
+
+                // 2. Check authorization (only the user who booked or the mentor can refund)
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var isBookedUser = booking.User?.UserId == currentUserId;
+                var isGamer = booking.Gamer?.UserId == currentUserId;
+
+                if (!isBookedUser && !isGamer)
+                    return Forbid("You don't have permission to refund this booking");
+
+                // 3. Check if the booking has a payment ID
+                if (string.IsNullOrEmpty(booking.PaymentIntentId))
+                    return BadRequest("No payment information associated with this booking");
+
+                // 4. Create refund via Stripe
+                var refundService = new RefundService();
+                var refundOptions = new RefundCreateOptions
+                {
+                    PaymentIntent = booking.PaymentIntentId,
+                    Reason = RefundReasons.RequestedByCustomer
+                };
+
+                var refund = await refundService.CreateAsync(refundOptions);
+
+                // 5. Delete the booking
+                await _mediator.Send(new DeleteBookingCommand(bookingId));
+
+                return Ok(new
+                {
+                    Success = true,
+                    RefundId = refund.Id,
+                    Amount = refund.Amount,
+                    Status = refund.Status
+                });
+            }
+            catch (StripeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { Error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Error = ex.Message });
+            }
+        }
+
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook()
         {
@@ -169,7 +227,10 @@ namespace GamingWithMe.Api.Controllers
                     {
                         // Retrieve booking details from metadata
                         var bookingDetailsJson = session.Metadata["bookingDetails"];
-                        var bookingCommand = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
+                        var booking = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
+
+                        var bookingCommand = new BookingCommand(booking.mentorId, booking.clientId, session.PaymentIntentId, booking.BookingDetailsDto);
+
 
                         // Create the booking
                         await _mediator.Send(bookingCommand);
