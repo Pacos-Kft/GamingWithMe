@@ -26,7 +26,6 @@ namespace GamingWithMe.Api.Controllers
 
 
 
-
             return Ok(dto);
         }
 
