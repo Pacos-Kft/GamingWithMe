@@ -8,5 +8,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record BookingCommand(Guid mentorId, string clientId, string PaymentIntentId, BookingDetailsDto BookingDetailsDto) : IRequest<bool>;
+    public record SendMessageCommand(Guid SenderId, Guid ReceiverId, string Content) : IRequest<MessageDto>;
 }

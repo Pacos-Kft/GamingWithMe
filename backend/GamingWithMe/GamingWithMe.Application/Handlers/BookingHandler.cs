@@ -70,7 +70,7 @@ namespace GamingWithMe.Application.Handlers
             if (fromTime.TimeOfDay < date.StartTime || fromTime.TimeOfDay + duration > date.EndTime)
                 throw new InvalidOperationException("Booking is outside of gamer's availability hours.");
 
-            var booking = new Booking(gamer.Id, user.Id, fromTime, duration);
+            var booking = new Booking(gamer.Id, user.Id, fromTime, duration,request.PaymentIntentId);
 
             await _bookingRepo.AddAsync(booking, cancellationToken);
 

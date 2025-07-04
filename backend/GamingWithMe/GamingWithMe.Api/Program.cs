@@ -1,14 +1,15 @@
-﻿using GamingWithMe.Application.Mappings;
+﻿using GamingWithMe.Api.Hubs;
+using GamingWithMe.Application.DependencyInjection;
+using GamingWithMe.Application.Handlers;
+using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Application.Mappings;
+using GamingWithMe.Domain.Entities;
 using GamingWithMe.Infrastructure.Data;
 using GamingWithMe.Infrastructure.DependencyInjection;
-using GamingWithMe.Application.DependencyInjection;
+using GamingWithMe.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using GamingWithMe.Application.Interfaces;
-using GamingWithMe.Infrastructure.Repositories;
-using GamingWithMe.Application.Handlers;
-using GamingWithMe.Domain.Entities;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -62,7 +63,9 @@ builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<AccountLinkService>();
 builder.Services.AddScoped<PriceService>();
 
+builder.Services.AddSignalR();
 
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
@@ -113,7 +116,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-using(var scope = app.Services.CreateScope())
+app.MapHub<ChatHub>("/chatHub");
+
+using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 

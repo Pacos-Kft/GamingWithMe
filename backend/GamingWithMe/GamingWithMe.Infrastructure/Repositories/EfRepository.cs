@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Repositories
 {
-    public sealed class EfRepository<T> : IAsyncRepository<T> where T : class
+    public class EfRepository<T> : IAsyncRepository<T> where T : class
     {
         private readonly ApplicationDbContext _ctx;
 

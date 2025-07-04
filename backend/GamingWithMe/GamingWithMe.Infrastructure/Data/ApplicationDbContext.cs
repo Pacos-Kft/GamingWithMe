@@ -87,7 +87,20 @@ namespace GamingWithMe.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            builder.Entity<Message>(m =>
+            {
+                m.HasKey(x => x.Id);
 
+                m.HasOne(x => x.Sender)
+                    .WithMany(u => u.SentMessages)
+                    .HasForeignKey(x => x.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                m.HasOne(x => x.Receiver)
+                    .WithMany(u => u.ReceivedMessages)
+                    .HasForeignKey(x => x.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
 
 

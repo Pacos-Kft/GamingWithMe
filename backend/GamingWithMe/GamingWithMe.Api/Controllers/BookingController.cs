@@ -22,8 +22,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var booked = await _mediator.Send(new BookingCommand(userid, userId, dto));
-
+            var booked = await _mediator.Send(new BookingCommand(userid, userId,"", dto));
 
 
 
