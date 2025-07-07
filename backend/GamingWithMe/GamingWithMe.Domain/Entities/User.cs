@@ -19,6 +19,8 @@ namespace GamingWithMe.Domain.Entities
 
         public string Username { get; set; }
 
+        public string GoogleId { get; set; }
+
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public ICollection<Booking> Bookings { get; set; }
@@ -44,6 +46,7 @@ namespace GamingWithMe.Domain.Entities
             StripeCustomer = string.Empty;
             SentMessages = new List<Message>();
             ReceivedMessages = new List<Message>();
+            GoogleId = string.Empty;
 
         }
     }

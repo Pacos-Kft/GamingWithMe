@@ -36,7 +36,17 @@ namespace GamingWithMe.Application.Handlers
                 Email = dto.email,
             };
 
-            var result = await _userManager.CreateAsync(user,dto.password);
+            IdentityResult result;
+
+            if (!string.IsNullOrWhiteSpace(dto.password))
+            {
+                result = await _userManager.CreateAsync(user, dto.password);
+            }
+            else
+            {
+                result = await _userManager.CreateAsync(user);
+            }
+
 
             if (!result.Succeeded) {
                 throw new InvalidOperationException(
