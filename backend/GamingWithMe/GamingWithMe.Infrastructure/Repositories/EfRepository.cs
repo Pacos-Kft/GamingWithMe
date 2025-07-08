@@ -50,6 +50,17 @@ namespace GamingWithMe.Infrastructure.Repositories
             return await _ctx.Set<T>().AsNoTracking().ToListAsync(ct);
         }
 
+        public async Task<IReadOnlyList<T>> ListAsync(CancellationToken ct = default, params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _ctx.Set<T>().AsNoTracking();
+
+            foreach (var include in includes)
+                query = query.Include(include);
+
+            return await query.ToListAsync(ct);
+        }
+
+
         public async Task Update(T entity)
         {
             _ctx.Update(entity);
