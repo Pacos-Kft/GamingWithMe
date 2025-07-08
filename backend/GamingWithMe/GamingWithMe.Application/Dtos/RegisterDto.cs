@@ -12,8 +12,7 @@ namespace GamingWithMe.Application.Dtos
         string email,
         string password,
         string username,
-        string googleId,
-        UserType PlayerType
+        string googleId
         );
     
 }

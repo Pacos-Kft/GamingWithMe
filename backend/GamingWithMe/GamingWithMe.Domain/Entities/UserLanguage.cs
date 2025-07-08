@@ -6,17 +6,19 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class GamerGame
+    public class UserLanguage
     {
         public Guid PlayerId { get; set; }
-        public virtual Gamer Player { get; set; }
+        public virtual User Player { get; set; }
 
-        public Guid GameId { get; set; }
-        public virtual Game Game { get; set; }
+        public Guid LanguageId { get; set; }
+        public virtual Language Language { get; set; }
 
-        public GamerGame()
+        public UserLanguage()
         {
             
         }
+
+
     }
 }

@@ -12,15 +12,13 @@ namespace GamingWithMe.Application.Handlers
 {
     public class SetAvailableHoursHandler : IRequestHandler<SetAvailableHoursCommand, bool>
     {
-        private readonly IAsyncRepository<Gamer> _repo;
-        private readonly IAsyncRepository<GamerAvailability> _arepo;
+        private readonly IAsyncRepository<User> _repo;
+        private readonly IAsyncRepository<UserAvailability> _arepo;
 
-        private readonly IGamerReadRepository _gamerReadRepository;
 
-        public SetAvailableHoursHandler(IAsyncRepository<Gamer> repo, IAsyncRepository<GamerAvailability> arepo, IGamerReadRepository gamerReadRepository)
+        public SetAvailableHoursHandler(IAsyncRepository<User> repo, IAsyncRepository<UserAvailability> arepo)
         {
             _repo = repo;
-            _gamerReadRepository = gamerReadRepository;
             _arepo = arepo;
         }
         public async Task<bool> Handle(SetAvailableHoursCommand request, CancellationToken cancellationToken)
@@ -55,10 +53,10 @@ namespace GamingWithMe.Application.Handlers
                 }
 
 
-                var availability = new GamerAvailability
+                var availability = new UserAvailability
                 {
                     Id = Guid.NewGuid(),
-                    GamerId = userid,
+                    UserId = userid,
                     DayOfWeek = day,
                     StartTime = start,
                     EndTime = end

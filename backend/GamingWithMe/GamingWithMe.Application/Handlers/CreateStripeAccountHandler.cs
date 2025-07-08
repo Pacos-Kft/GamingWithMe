@@ -16,14 +16,14 @@ namespace GamingWithMe.Application.Handlers
     public class CreateStripeAccountHandler : IRequestHandler<CreateStripeAccountCommand, (AccountLink, Account)>
     {
         private readonly IAsyncRepository<IdentityUser> _identityRepo;
-        private readonly IAsyncRepository<Gamer> _gamerRepo;
+        private readonly IAsyncRepository<User> _userRepo;
         private readonly AccountService _accountService;
         private readonly AccountLinkService _accountLinkService;
 
-        public CreateStripeAccountHandler(IAsyncRepository<IdentityUser> identityRepo, IAsyncRepository<Gamer> gamerRepo, AccountService accountService, AccountLinkService accountLinkService)
+        public CreateStripeAccountHandler(IAsyncRepository<IdentityUser> identityRepo, IAsyncRepository<User> userRepo, AccountService accountService, AccountLinkService accountLinkService)
         {
             _identityRepo = identityRepo;
-            _gamerRepo = gamerRepo;
+            _userRepo = userRepo;
             _accountService = accountService;
             _accountLinkService = accountLinkService;
         }
@@ -33,11 +33,11 @@ namespace GamingWithMe.Application.Handlers
 
 
             var identityUser = (await _identityRepo.ListAsync()).FirstOrDefault(x => x.Id == request.userId);
-            var notIdentityUser = (await _gamerRepo.ListAsync()).FirstOrDefault(x => x.UserId == request.userId);
+            var notIdentityUser = (await _userRepo.ListAsync()).FirstOrDefault(x => x.UserId == request.userId);
 
             if (identityUser == null || notIdentityUser == null)
             {
-                throw new InvalidOperationException("User not found");
+                throw new InvalidOperationException("User not found in handler");
             }
 
 
@@ -55,7 +55,7 @@ namespace GamingWithMe.Application.Handlers
             var account = await _accountService.CreateAsync(accountOptions);
 
             notIdentityUser.StripeAccount = account.Id;
-            await _gamerRepo.Update(notIdentityUser);
+            await _userRepo.Update(notIdentityUser);
 
             var link = await _accountLinkService.CreateAsync(new AccountLinkCreateOptions
             {

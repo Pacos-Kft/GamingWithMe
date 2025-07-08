@@ -10,11 +10,11 @@ namespace GamingWithMe.Domain.Entities
     public class Booking
     {
         public Guid Id { get; set; }
-        public Guid GamerId { get; set; }
-        public Gamer Gamer { get; set; }
+        public Guid ProviderId { get; set; }
+        public User Provider { get; set; }
 
-        public Guid UserId { get; set; }
-        public User User { get; set; }
+        public Guid CustomerId { get; set; }
+        public User Customer { get; set; }
 
         public DateTime StartTime { get; set; }
         public TimeSpan Duration { get; set; }
@@ -26,10 +26,10 @@ namespace GamingWithMe.Domain.Entities
             
         }
 
-        public Booking(Guid GamerId, Guid UserId, DateTime StartTime, TimeSpan Duration, string paymentIntentId)
+        public Booking(Guid ProviderId, Guid CustomerId, DateTime StartTime, TimeSpan Duration, string paymentIntentId)
         {
-            this.GamerId = GamerId;
-            this.UserId = UserId;
+            this.ProviderId = ProviderId;
+            this.CustomerId = CustomerId;
             this.StartTime = StartTime;
             this.Duration = Duration;
             CreatedAt = DateTime.UtcNow;

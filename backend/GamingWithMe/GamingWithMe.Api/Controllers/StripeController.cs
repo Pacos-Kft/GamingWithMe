@@ -37,11 +37,11 @@ namespace GamingWithMe.Api.Controllers
         private readonly PriceService _priceService;
         private readonly IMediator _mediator;
         private readonly string _webhookSecret;
-        private readonly IAsyncRepository<Gamer> _gamerRepo;
+        private readonly IAsyncRepository<User> _gamerRepo;
 
 
 
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<Gamer> gamerRepo, PriceService priceService)
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService)
         {
             _model = model.Value;
             _token = token;
@@ -169,8 +169,8 @@ namespace GamingWithMe.Api.Controllers
                 // 2. Check authorization (only the user who booked or the mentor can refund)
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                var isBookedUser = booking.User?.UserId == currentUserId;
-                var isGamer = booking.Gamer?.UserId == currentUserId;
+                var isBookedUser = booking.Customer?.UserId == currentUserId;
+                var isGamer = booking.Provider?.UserId == currentUserId;
 
                 if (!isBookedUser && !isGamer)
                     return Forbid("You don't have permission to refund this booking");
@@ -229,7 +229,7 @@ namespace GamingWithMe.Api.Controllers
                         var bookingDetailsJson = session.Metadata["bookingDetails"];
                         var booking = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
 
-                        var bookingCommand = new BookingCommand(booking.mentorId, booking.clientId, session.PaymentIntentId, booking.BookingDetailsDto);
+                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.BookingDetailsDto);
 
 
                         // Create the booking
@@ -291,15 +291,16 @@ namespace GamingWithMe.Api.Controllers
         }
 
         [HttpPost("create-connected-account")]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateConnectedAccount()
         {
             StripeConfiguration.ApiKey = _model.SecretKey;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+
             if(userId == null)
             {
-                return BadRequest("User not found");
+                return BadRequest("User not found in controller");
             }
 
             var (link,account) = await _mediator.Send(new CreateStripeAccountCommand(userId));

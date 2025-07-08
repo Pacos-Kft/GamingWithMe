@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
-    public class GamerAvailability
+    public class UserAvailability
     {
         public Guid Id { get; set; }
-        public Guid GamerId { get; set; }
-        public Gamer Gamer { get; set; }
+        public Guid UserId { get; set; }
+        public User User { get; set; }
 
         public TimeSpan StartTime { get; set; } 
         public TimeSpan EndTime { get; set; }   
         public DayOfWeek DayOfWeek { get; set; }
 
-        public GamerAvailability()
+        public UserAvailability()
         {
             
         }
 
-        public GamerAvailability(Guid gamerId, TimeSpan startTime, TimeSpan endTime, DayOfWeek dayOfWeek)
+        public UserAvailability(Guid gamerId, TimeSpan startTime, TimeSpan endTime, DayOfWeek dayOfWeek)
         {
             Id = Guid.NewGuid();
-            GamerId = gamerId;
+            UserId = gamerId;
             StartTime = startTime;
             EndTime = endTime;
             DayOfWeek = dayOfWeek;

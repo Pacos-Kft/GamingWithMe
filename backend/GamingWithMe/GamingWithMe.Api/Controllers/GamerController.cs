@@ -14,7 +14,7 @@ namespace GamingWithMe.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Esport")]
+    [Authorize]
     public class GamerController : ControllerBase
     {
 
@@ -25,9 +25,9 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetProfile([FromQuery] string username)
+        public async Task<ActionResult<ProfileDto>> GetProfile([FromQuery] string username)
         {
-            var profile = await _mediator.Send(new GetGamerProfileQuery(username));
+            var profile = await _mediator.Send(new GetUserProfileQuery(username));
 
             return profile == null ? NotFound() : Ok(profile);
         }
@@ -42,7 +42,7 @@ namespace GamingWithMe.Api.Controllers
                 return NotFound();
             }
 
-            var added = await _mediator.Send(new AddLanguageToGamerCommand(userId, languageId));
+            var added = await _mediator.Send(new AddLanguageToUserCommand(userId, languageId));
 
             return Ok(added);
         }
@@ -52,7 +52,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteLanguageFromGamerCommand(userId, language));
+            var removed = await _mediator.Send(new DeleteLanguageFromUserCommand(userId, language));
 
             return Ok(removed);
         }
@@ -62,7 +62,7 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var added = await _mediator.Send(new AddGameToGamerCommand(userId, gameId));
+            var added = await _mediator.Send(new AddGameToUserCommand(userId, gameId));
 
             return Ok(added);
         }
@@ -72,17 +72,17 @@ namespace GamingWithMe.Api.Controllers
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteGameFromGamerCommand(userId, gameId));
+            var removed = await _mediator.Send(new DeleteGameFromUserCommand(userId, gameId));
 
             return Ok(removed);
         }
 
         [HttpPut("status/active")]
-        public async Task<IActionResult> SetIsActive()
+        public async Task<ActionResult<bool>> SetIsActive()
         {
             var userId = GetUserId();
             
-            var activity = await _mediator.Send(new SetGamerActivityCommand(userId));
+            var activity = await _mediator.Send(new SetUserActivityCommand(userId));
 
             return Ok(activity);
         }

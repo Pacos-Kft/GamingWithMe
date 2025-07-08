@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class DeleteLanguageFromGamerHandler : IRequestHandler<DeleteLanguageFromUserCommand, bool>
+    public class AddLanguageToUserHandler : IRequestHandler<AddLanguageToUserCommand, Guid>
     {
         private readonly IAsyncRepository<User> _playerRepo;
         private readonly IAsyncRepository<Language> _languageRepo;
 
-        public DeleteLanguageFromGamerHandler(
+        public AddLanguageToUserHandler(
             IAsyncRepository<User> playerRepo,
             IAsyncRepository<Language> languageRepo)
         {
@@ -23,26 +23,31 @@ namespace GamingWithMe.Application.Handlers
             _languageRepo = languageRepo;
         }
 
-        public async Task<bool> Handle(DeleteLanguageFromUserCommand request, CancellationToken cancellationToken)
+
+        public async Task<Guid> Handle(AddLanguageToUserCommand request, CancellationToken cancellationToken)
         {
-            var player = (await _playerRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.userId);
+            var player = (await _playerRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.userId);
 
             if (player is null)
                 throw new InvalidOperationException("Player not found");
 
-            var language = (await _languageRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.Name == request.language);
+            var language = await _languageRepo.GetByIdAsync(request.LanguageId, cancellationToken);
             if (language == null)
                 throw new InvalidOperationException("Language not found.");
 
-            var entry = player.Languages.FirstOrDefault(x => x.LanguageId == language.Id);
+            var alreadyHasLanguage = player.Languages.Any(x=> x.LanguageId == language.Id);
 
-            if (entry != null) {
-                player.Languages.Remove(entry);
-                await _playerRepo.Update(player);
-                return true;
+            if (!alreadyHasLanguage) {
+                player.Languages.Add(new UserLanguage
+                {
+                    LanguageId = request.LanguageId,
+                    PlayerId = player.Id
+                });
             }
 
-            return false;
+            await _playerRepo.Update(player);
+
+            return request.LanguageId;
         }
     }
 }

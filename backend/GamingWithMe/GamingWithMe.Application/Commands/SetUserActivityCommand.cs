@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record SetGamerActivityCommand(string userId) : IRequest<bool>;
+    public record SetUserActivityCommand(string userId) : IRequest<bool>;
 }

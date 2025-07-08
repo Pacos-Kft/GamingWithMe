@@ -8,5 +8,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Queries
 {
-    public record GetGamerProfileQuery(string username) : IRequest<GamerDto?>;
+    public record GetUserProfileQuery(string username) : IRequest<ProfileDto?>;
 }

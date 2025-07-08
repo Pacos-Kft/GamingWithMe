@@ -7,5 +7,6 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record DeleteLanguageFromGamerCommand(string userId, string language) : IRequest<bool>;
+    public record AddGameToUserCommand(string userId, Guid gameId) : IRequest<bool>;
+    
 }

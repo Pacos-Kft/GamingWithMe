@@ -15,13 +15,11 @@ namespace GamingWithMe.Application.Handlers
     public class RegisterProfileHandler : IRequestHandler<RegisterProfileCommand, string>
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly IAsyncRepository<Gamer> _esportRepo;
         private readonly IAsyncRepository<User> _userRepo;
 
-        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<Gamer> esportRepo, IAsyncRepository<User> regularRepo)
+        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<User> regularRepo)
         {
             _userManager = userManager;
-            _esportRepo = esportRepo;
             _userRepo = regularRepo;
         }
 
@@ -53,19 +51,21 @@ namespace GamingWithMe.Application.Handlers
                     string.Join(';', result.Errors));
             }
 
-            var roleName = ToRole(dto.PlayerType);
-            await _userManager.AddToRoleAsync(user, roleName);
+            //var roleName = ToRole(dto.PlayerType);
+            //await _userManager.AddToRoleAsync(user, roleName);
 
-            switch (dto.PlayerType)
-            {
-                case UserType.Gamer:
-                   await _esportRepo.AddAsync(new Gamer(user.Id, dto.username));
-                    break;
-                case UserType.User:
-                    await _userRepo.AddAsync(new User(user.Id, dto.username));
-                    break;
+            //switch (dto.PlayerType)
+            //{
+            //    case UserType.Gamer:
+            //       await _esportRepo.AddAsync(new Gamer(user.Id, dto.username));
+            //        break;
+            //    case UserType.User:
+            //        await _userRepo.AddAsync(new User(user.Id, dto.username));
+            //        break;
 
-            }
+            //}
+
+            await _userRepo.AddAsync(new User(user.Id, dto.username));
             return user.Id;
             
         }

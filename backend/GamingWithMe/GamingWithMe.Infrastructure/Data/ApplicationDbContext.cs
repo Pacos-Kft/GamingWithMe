@@ -15,13 +15,12 @@ namespace GamingWithMe.Infrastructure.Data
         public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Game> Games => Set<Game>();
-        public DbSet<Gamer> Gamers => Set<Gamer>();
         //public DbSet<User> Users => Set<User>();
-        public DbSet<GamerGame> GamerGames => Set<GamerGame>();
+        public DbSet<UserGame> UserGames => Set<UserGame>();
         public DbSet<Language> Languages => Set<Language>();
-        public DbSet<GamerLanguage> GamerLanguages => Set<GamerLanguage>();
+        public DbSet<UserLanguage> UserLanguages => Set<UserLanguage>();
         public DbSet<Booking> Bookings => Set<Booking>();
-        public DbSet<GamerAvailability> GamerAvailabilities => Set<GamerAvailability>();
+        public DbSet<UserAvailability> UserAvailabilities => Set<UserAvailability>();
         public DbSet<Product> Products => Set<Product>();
 
 
@@ -43,10 +42,9 @@ namespace GamingWithMe.Infrastructure.Data
                  .OnDelete(DeleteBehavior.Restrict);  
             });
 
-            builder.Entity<Gamer>().ToTable("Gamers");
-            //builder.Entity<User>().ToTable("Users");
+            
 
-            builder.Entity<GamerGame>(x =>
+            builder.Entity<UserGame>(x =>
             {
                 x.HasKey(eg => new { eg.PlayerId, eg.GameId });
 
@@ -59,7 +57,7 @@ namespace GamingWithMe.Infrastructure.Data
                 .HasForeignKey(ep => ep.GameId);
             });
 
-            builder.Entity<GamerLanguage>(x =>
+            builder.Entity<UserLanguage>(x =>
             {
                 x.HasKey(epl => new { epl.PlayerId, epl.LanguageId });
 
@@ -76,14 +74,14 @@ namespace GamingWithMe.Infrastructure.Data
             {
                 b.HasKey(x => x.Id);
 
-                b.HasOne(x => x.Gamer)
+                b.HasOne(x => x.Provider)
                     .WithMany()
-                    .HasForeignKey(x => x.GamerId)
+                    .HasForeignKey(x => x.ProviderId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                b.HasOne(x => x.User)
+                b.HasOne(x => x.Customer)
                     .WithMany(u => u.Bookings) 
-                    .HasForeignKey(x => x.UserId)
+                    .HasForeignKey(x => x.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

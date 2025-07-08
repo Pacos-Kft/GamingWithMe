@@ -15,13 +15,13 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly ProductService _productService;
         private readonly IAsyncRepository<Domain.Entities.Product> _productRepository;
-        private readonly IAsyncRepository<Gamer> _gamerRepository;
+        private readonly IAsyncRepository<User> _userRepository;
 
-        public CreateProductHandler(ProductService productService, IAsyncRepository<Domain.Entities.Product> productRepository, IAsyncRepository<Gamer> gamerRepository)
+        public CreateProductHandler(ProductService productService, IAsyncRepository<Domain.Entities.Product> productRepository, IAsyncRepository<User> userRepository)
         {
             _productService = productService;
             _productRepository = productRepository;
-            _gamerRepository = gamerRepository;
+            _userRepository = userRepository;
         }
 
         public async Task<Stripe.Product> Handle(CreateProductCommand request, CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ namespace GamingWithMe.Application.Handlers
 
             var stripeProduct = await _productService.CreateAsync(productOptions);
 
-            var user = (await _gamerRepository.ListAsync()).FirstOrDefault(x=> x.UserId == request.userId);
+            var user = (await _userRepository.ListAsync()).FirstOrDefault(x=> x.UserId == request.userId);
 
             if(user is null)
             {
@@ -56,7 +56,7 @@ namespace GamingWithMe.Application.Handlers
                 Description = dto.description,
                 Price = dto.price,
                 Duration = dto.duration,
-                GamerId = user.Id,
+                UserId = user.Id,
                 StripePriceId = stripeProduct.DefaultPriceId,
             };
 

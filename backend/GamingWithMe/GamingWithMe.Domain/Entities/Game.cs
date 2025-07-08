@@ -13,7 +13,7 @@ namespace GamingWithMe.Domain.Entities
         public string Name { get; set; }
         public string Description { get; set; }
         public string Slug { get; set; }
-        public ICollection<GamerGame> EsportPlayers { get; set; }
+        public ICollection<UserGame> EsportPlayers { get; set; }
 
         private Game() { }
 
@@ -23,7 +23,7 @@ namespace GamingWithMe.Domain.Entities
             Name = name;
             Description = description ?? string.Empty;
             Slug = SlugGenerator.From(name);
-            EsportPlayers = new List<GamerGame>();
+            EsportPlayers = new List<UserGame>();
 
         }
     }

@@ -59,7 +59,7 @@ namespace GamingWithMe.Api.Controllers
             //    FullName = fullName
             //});
 
-            var dto = new RegisterDto(email, null,fullName, googleId, Domain.Entities.UserType.User);
+            var dto = new RegisterDto(email, null,fullName, googleId);
 
 
             var id = await _mediator.Send(new RegisterProfileCommand(dto));

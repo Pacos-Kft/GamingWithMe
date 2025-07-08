@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Commands
 {
-    public record AddLanguageToGamerCommand(string userId, Guid LanguageId) : IRequest<Guid>;
+    public record AddLanguageToUserCommand(string userId, Guid LanguageId) : IRequest<Guid>;
 }

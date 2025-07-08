@@ -41,7 +41,6 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<IGamerReadRepository, GamerReadRepository>();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
@@ -71,7 +70,7 @@ builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
-builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(GamerProfile).Assembly));
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(UserProfile).Assembly));
 
 //builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -94,17 +93,17 @@ builder.Services.AddSwaggerGen(options =>
 
 });
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie()
-.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-{
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-});
+//builder.Services.AddAuthentication(options =>
+//{
+//    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+//})
+//.AddCookie();
+//.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+//{
+//    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+//    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+//});
 
 
 
