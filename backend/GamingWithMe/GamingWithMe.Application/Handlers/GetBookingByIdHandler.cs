@@ -23,7 +23,7 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<Booking?> Handle(GetBookingByIdQuery request, CancellationToken cancellationToken)
         {
-            var booking = await _bookRepo.GetByIdAsync(request.Id, cancellationToken, b => b.Gamer, b => b.User);
+            var booking = await _bookRepo.GetByIdAsync(request.Id, cancellationToken, b => b.Provider, b => b.Customer);
 
             if (booking == null)
             {

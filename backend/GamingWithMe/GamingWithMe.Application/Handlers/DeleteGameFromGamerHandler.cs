@@ -10,30 +10,28 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class DeleteGameFromGamerHandler : IRequestHandler<DeleteGameFromGamerCommand, bool>
+    public class DeleteGameFromGamerHandler : IRequestHandler<DeleteGameFromUserCommand, bool>
     {
-        private readonly IAsyncRepository<Gamer> _playerRepository;
+        private readonly IAsyncRepository<User> _playerRepository;
         private readonly IAsyncRepository<Game> _gameRepository;
-        private readonly IGamerReadRepository esportPlayerReadRepository;
 
-        public DeleteGameFromGamerHandler(IAsyncRepository<Gamer> playerRepository, IAsyncRepository<Game> gameRepository, IGamerReadRepository esportPlayerReadRepository)
+        public DeleteGameFromGamerHandler(IAsyncRepository<User> playerRepository, IAsyncRepository<Game> gameRepository)
         {
             _playerRepository = playerRepository;
             _gameRepository = gameRepository;
-            this.esportPlayerReadRepository = esportPlayerReadRepository;
         }
 
-        public async Task<bool> Handle(DeleteGameFromGamerCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(DeleteGameFromUserCommand request, CancellationToken cancellationToken)
         {
-            var player = await esportPlayerReadRepository.GetByIdWithGamesAsync(request.userId, cancellationToken);
+            var player = (await _playerRepository.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.userId);
 
-            if (player is not Gamer esportPlayer)
-                throw new InvalidOperationException("Player not found or not an Esport player.");
+            if (player is null)
+                throw new InvalidOperationException("Player not found");
 
             var game = await _gameRepository.GetByIdAsync(request.gameId, cancellationToken);
             if (game == null) throw new InvalidOperationException("Game not found.");
 
-            var entry = esportPlayer.Games.FirstOrDefault(x=> x.GameId == game.Id);
+            var entry = player.Games.FirstOrDefault(x=> x.GameId == game.Id);
 
             if (entry != null)
             {

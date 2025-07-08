@@ -15,8 +15,8 @@ namespace GamingWithMe.Domain.Entities
         public string StripePriceId { get; set; }
         public TimeSpan Duration { get; set; }
 
-        public Guid GamerId { get; set; }
-        public Gamer Gamer { get; set; }
+        public Guid UserId { get; set; }
+        public User User { get; set; }
 
 
         public Product()
@@ -24,14 +24,14 @@ namespace GamingWithMe.Domain.Entities
             
         }
 
-        public Product(string title, string description, long price, TimeSpan duration, Guid gamerId, string stripePriceId)
+        public Product(string title, string description, long price, TimeSpan duration, Guid userId, string stripePriceId)
         {
             Id = Guid.NewGuid();
             Title = title;
             Description = description;
             Price = price;
             Duration = duration;
-            GamerId = gamerId;
+            UserId = userId;
             StripePriceId = stripePriceId;
         }
     }

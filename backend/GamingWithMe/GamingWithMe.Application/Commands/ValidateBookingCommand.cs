@@ -10,14 +10,14 @@ namespace GamingWithMe.Application.Commands
 {
     public class ValidateBookingCommand : IRequest<bool>
     {
-        public Guid MentorId { get; set; }
-        public string ClientId { get; set; }
+        public Guid ProviderId { get; set; }
+        public string CustomerId { get; set; }
         public BookingDetailsDto BookingDetailsDto { get; set; }
 
         public ValidateBookingCommand(BookingCommand originalCommand)
         {
-            MentorId = originalCommand.mentorId;
-            ClientId = originalCommand.clientId;
+            ProviderId = originalCommand.providerId;
+            CustomerId = originalCommand.customerId;
             BookingDetailsDto = originalCommand.BookingDetailsDto;
         }
     }

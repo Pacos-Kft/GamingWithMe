@@ -7,6 +7,8 @@ using GamingWithMe.Domain.Entities;
 using GamingWithMe.Infrastructure.Data;
 using GamingWithMe.Infrastructure.DependencyInjection;
 using GamingWithMe.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -39,7 +41,6 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<IGamerReadRepository, GamerReadRepository>();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
@@ -69,7 +70,7 @@ builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
-builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(GamerProfile).Assembly));
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(UserProfile).Assembly));
 
 //builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -91,6 +92,19 @@ builder.Services.AddSwaggerGen(options =>
     });
 
 });
+
+//builder.Services.AddAuthentication(options =>
+//{
+//    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+//})
+//.AddCookie();
+//.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+//{
+//    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+//    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+//});
+
 
 
 
@@ -122,7 +136,7 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    var roles = new[] { "Admin", "Esport", "Regular" };
+    var roles = new[] { "Admin", "Regular" };
 
     foreach (var item in roles)
     {

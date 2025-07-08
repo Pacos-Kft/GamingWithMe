@@ -16,29 +16,26 @@ namespace GamingWithMe.Application.Handlers
     public class BookingHandler : IRequestHandler<BookingCommand, bool>
     {
         private readonly IAsyncRepository<User> _userRepo;
-        private readonly IAsyncRepository<Gamer> _gamerRepo;
         private readonly IAsyncRepository<Booking> _bookingRepo;
 
         public BookingHandler(
             IAsyncRepository<User> userRepo,
-            IAsyncRepository<Gamer> gamerRepo,
             IAsyncRepository<Booking> bookingRepo)
         {
             _userRepo = userRepo;
-            _gamerRepo = gamerRepo;
             _bookingRepo = bookingRepo;
         }
 
         public async Task<bool> Handle(BookingCommand request, CancellationToken cancellationToken)
         {
-            var user = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.clientId);
+            var client = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.customerId);
 
-            var gamer = await _gamerRepo.GetByIdAsync(request.mentorId, cancellationToken,g=> g.WeeklyAvailability);
+            var provider = await _userRepo.GetByIdAsync(request.providerId, cancellationToken,g=> g.WeeklyAvailability);
 
-            if (gamer == null || user == null)
+            if (provider == null || client == null)
                 throw new InvalidOperationException("Gamer or User not found");
 
-            if (!gamer.IsActive)
+            if (!provider.IsActive)
                 throw new InvalidOperationException("Gamer is not currently active and cannot accept bookings.");
 
 
@@ -52,13 +49,13 @@ namespace GamingWithMe.Application.Handlers
             if (duration <= TimeSpan.Zero)
                 throw new InvalidOperationException("Invalid time range: End must be after Start");
 
-            var date = gamer.WeeklyAvailability.FirstOrDefault(x => x.DayOfWeek == fromTime.DayOfWeek);
+            var date = provider.WeeklyAvailability.FirstOrDefault(x => x.DayOfWeek == fromTime.DayOfWeek);
 
             if (date == null)
                 throw new InvalidOperationException("Gamer is not available on the selected day.");
 
             var overlappingBooking = (await _bookingRepo.ListAsync(cancellationToken))
-            .Where(x => x.GamerId == gamer.Id && x.StartTime.Date == fromTime.Date)
+            .Where(x => x.ProviderId == provider.Id && x.StartTime.Date == fromTime.Date)
             .Any(x =>
                 x.StartTime < fromTime + duration &&
                 fromTime < x.StartTime + x.Duration
@@ -70,7 +67,7 @@ namespace GamingWithMe.Application.Handlers
             if (fromTime.TimeOfDay < date.StartTime || fromTime.TimeOfDay + duration > date.EndTime)
                 throw new InvalidOperationException("Booking is outside of gamer's availability hours.");
 
-            var booking = new Booking(gamer.Id, user.Id, fromTime, duration,request.PaymentIntentId);
+            var booking = new Booking(provider.Id, client.Id, fromTime, duration,request.PaymentIntentId);
 
             await _bookingRepo.AddAsync(booking, cancellationToken);
 

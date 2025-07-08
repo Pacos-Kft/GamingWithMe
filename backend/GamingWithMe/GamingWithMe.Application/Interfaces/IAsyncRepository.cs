@@ -13,6 +13,7 @@ namespace GamingWithMe.Application.Interfaces
         Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default, params Expression<Func<T, object>>[] includes);
         Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<IReadOnlyList<T>> ListAsync(CancellationToken ct = default);
+        Task<IReadOnlyList<T>> ListAsync(CancellationToken ct = default, params Expression<Func<T, object>>[] includes);
         Task AddAsync(T entity, CancellationToken ct = default);
         Task Update(T entity);
         Task Delete(T entity);

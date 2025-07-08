@@ -8,8 +8,8 @@ namespace GamingWithMe.Application.Dtos
 {
     public record BookingPaymentDto
     (
-         Guid GamerId,
-         Guid UserId,
+         Guid ProviderId,
+         Guid CustomerId,
          string From,
          string Duration,
          string ConnectedAccountId,

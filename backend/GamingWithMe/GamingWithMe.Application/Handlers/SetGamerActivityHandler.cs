@@ -10,15 +10,15 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class SetGamerActivityHandler : IRequestHandler<SetGamerActivityCommand, bool>
+    public class SetGamerActivityHandler : IRequestHandler<SetUserActivityCommand, bool>
     {
-        private readonly IAsyncRepository<Gamer> _repo;
+        private readonly IAsyncRepository<User> _repo;
 
-        public SetGamerActivityHandler(IAsyncRepository<Gamer> repo)
+        public SetGamerActivityHandler(IAsyncRepository<User> repo)
         {
             _repo = repo;
         }
-        public async Task<bool> Handle(SetGamerActivityCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(SetUserActivityCommand request, CancellationToken cancellationToken)
         {
             var user = (await _repo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.userId);
 
