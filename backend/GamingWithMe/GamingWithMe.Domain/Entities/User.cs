@@ -33,7 +33,7 @@ namespace GamingWithMe.Domain.Entities
         public ICollection<UserAvailability> WeeklyAvailability { get; set; }
         public ICollection<Product> Products { get; set; }
         public ICollection<UserGame> Games { get; set; }
-
+        public ICollection<UserTag> Tags { get; set; }
 
 
 
@@ -65,7 +65,7 @@ namespace GamingWithMe.Domain.Entities
             IsActive = false;
             WeeklyAvailability = new List<UserAvailability>();
             Products = new List<Product>();
-
+            Tags = new List<UserTag>();
         }
     }
 }
