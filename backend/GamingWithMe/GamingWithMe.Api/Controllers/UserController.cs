@@ -15,13 +15,13 @@ namespace GamingWithMe.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class GamerController : ControllerBase
+    public class UserController : ControllerBase
     {
 
 
         private readonly IMediator _mediator;
 
-        public GamerController(IMediator mediator) => _mediator = mediator;
+        public UserController(IMediator mediator) => _mediator = mediator;
 
         [HttpGet]
         [AllowAnonymous]
@@ -96,6 +96,23 @@ namespace GamingWithMe.Api.Controllers
 
             return Ok(activity);
         }
+
+        [HttpPost("tags")]
+        public async Task<IActionResult> AddTag([FromBody] Guid tagId)
+        {
+            var userId = GetUserId();
+            var added = await _mediator.Send(new AddUserTagCommand(userId, tagId));
+            return added ? Ok(true) : BadRequest("Failed to add tag");
+        }
+
+        [HttpDelete("tags/{tagId}")]
+        public async Task<IActionResult> RemoveTag(Guid tagId)
+        {
+            var userId = GetUserId();
+            var removed = await _mediator.Send(new RemoveUserTagCommand(userId, tagId));
+            return removed ? Ok(true) : BadRequest("Failed to remove tag");
+        }
+
 
         private string GetUserId()
         {
