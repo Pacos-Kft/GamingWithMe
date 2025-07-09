@@ -97,6 +97,26 @@ namespace GamingWithMe.Api.Controllers
             return Ok(activity);
         }
 
+        [HttpPost("daily-availability")]
+        public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)
+        {
+            var userId = GetUserId();
+
+            var result = await _mediator.Send(new SetDailyAvailabilityCommand(userId, availability));
+
+            return result ? Ok(true) : BadRequest("Failed to set availability");
+        }
+
+        [HttpGet("daily-availability/{date}")]
+        public async Task<IActionResult> GetDailyAvailability(DateTime date)
+        {
+            var userId = GetUserId();
+
+            var availability = await _mediator.Send(new GetDailyAvailabilityQuery(userId, date));
+
+            return Ok(availability);
+        }
+
         [HttpPost("tags")]
         public async Task<IActionResult> AddTag([FromBody] Guid tagId)
         {
