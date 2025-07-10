@@ -32,6 +32,15 @@ namespace GamingWithMe.Api.Controllers
             return profile == null ? NotFound() : Ok(profile);
         }
 
+        [HttpGet("profiles")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<ProfileDto>>> GetProfiles()
+        {
+            var profiles = await _mediator.Send(new GetUserProfilesQuery());
+
+            return profiles == null ? NotFound() : Ok(profiles);
+        }
+
 
         [HttpPost("languages")]
         public async Task<IActionResult> AddLanguage([FromBody] Guid languageId)
