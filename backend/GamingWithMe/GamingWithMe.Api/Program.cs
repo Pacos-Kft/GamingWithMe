@@ -1,4 +1,5 @@
-﻿using GamingWithMe.Api.Hubs;
+﻿using Amazon.S3;
+using GamingWithMe.Api.Hubs;
 using GamingWithMe.Application.DependencyInjection;
 using GamingWithMe.Application.Handlers;
 using GamingWithMe.Application.Interfaces;
@@ -63,6 +64,22 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<AccountLinkService>();
 builder.Services.AddScoped<PriceService>();
+
+
+builder.Services.AddAWSService<IAmazonS3>(builder.Configuration.GetAWSOptions());
+builder.Services.AddSingleton<IAmazonS3>(provider => {
+    var config = provider.GetRequiredService<IConfiguration>();
+    var accessKey = config["AWS:AccessKey"];
+    var secretKey = config["AWS:SecretKey"];
+    var region = config["AWS:Region"];
+
+    return new AmazonS3Client(
+        accessKey,
+        secretKey,
+        Amazon.RegionEndpoint.GetBySystemName(region ?? "eu-central-1")
+    );
+});
+
 
 builder.Services.AddSignalR();
 
