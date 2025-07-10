@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.2" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.4.2" />
     <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.17" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.17" />
@@ -20,6 +22,10 @@
   <ItemGroup>
     <ProjectReference Include="..\GamingWithMe.Application\GamingWithMe.Application.csproj" />
     <ProjectReference Include="..\GamingWithMe.Infrastructure\GamingWithMe.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
