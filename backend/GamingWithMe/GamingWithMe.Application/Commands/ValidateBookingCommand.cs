@@ -12,13 +12,13 @@ namespace GamingWithMe.Application.Commands
     {
         public Guid ProviderId { get; set; }
         public string CustomerId { get; set; }
-        public BookingDetailsDto BookingDetailsDto { get; set; }
+        public Guid AppointmentId { get; set; }
 
-        public ValidateBookingCommand(BookingCommand originalCommand)
+        public ValidateBookingCommand(Guid providerId, string customerId, Guid appoitnmentId)
         {
-            ProviderId = originalCommand.providerId;
-            CustomerId = originalCommand.customerId;
-            BookingDetailsDto = originalCommand.BookingDetailsDto;
+            ProviderId = providerId;
+            CustomerId = customerId;
+            AppointmentId = appoitnmentId;
         }
     }
 }

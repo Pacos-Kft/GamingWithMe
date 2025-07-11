@@ -57,7 +57,7 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpPost("pay/{mentorId}")]
         [Authorize]
-        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] BookingDetailsDto request)
+        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] Guid appointmentId /*[FromBody] BookingDetailsDto request*/)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -66,7 +66,8 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var cmd = new BookingCommand(mentorId, userId,"", request);
+            //var cmd = new BookingCommand(mentorId, userId,"", request);
+            var cmd = (mentorId, userId,  appointmentId); 
 
             var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x=> x.Products);
 
@@ -85,7 +86,7 @@ namespace GamingWithMe.Api.Controllers
 
             try
             {
-                var validationCommand = new ValidateBookingCommand(cmd);
+                var validationCommand = new ValidateBookingCommand(cmd.mentorId, cmd.userId, cmd.appointmentId);
                 await _mediator.Send(validationCommand);
 
                 StripeConfiguration.ApiKey = _model.SecretKey;
@@ -229,7 +230,7 @@ namespace GamingWithMe.Api.Controllers
                         var bookingDetailsJson = session.Metadata["bookingDetails"];
                         var booking = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
 
-                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.BookingDetailsDto);
+                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.appointmentId);
 
 
                         // Create the booking
