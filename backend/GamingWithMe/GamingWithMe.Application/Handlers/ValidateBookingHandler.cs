@@ -25,12 +25,12 @@ namespace GamingWithMe.Application.Handlers
         public async Task<bool> Handle(ValidateBookingCommand request, CancellationToken cancellationToken)
         {
             var customer = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.CustomerId);
-            var provicer = await _userRepo.GetByIdAsync(request.ProviderId, cancellationToken, g => g.WeeklyAvailability);
+            var provider = await _userRepo.GetByIdAsync(request.ProviderId, cancellationToken, g => g.DailyAvailability);
 
-            if (provicer == null || customer == null)
+            if (provider == null || customer == null)
                 throw new InvalidOperationException("Gamer or User not found");
 
-            if (!provicer.IsActive)
+            if (!provider.IsActive)
                 throw new InvalidOperationException("Gamer is not currently active and cannot accept bookings.");
 
             if (!DateTime.TryParse(request.BookingDetailsDto.timeRange.From, out var fromTime))
@@ -42,13 +42,14 @@ namespace GamingWithMe.Application.Handlers
             if (duration <= TimeSpan.Zero)
                 throw new InvalidOperationException("Invalid time range: End must be after Start");
 
-            var date = provicer.WeeklyAvailability.FirstOrDefault(x => x.DayOfWeek == fromTime.DayOfWeek);
+            var date = provider.DailyAvailability.FirstOrDefault(x => x.Date.DayOfWeek == fromTime.DayOfWeek);
 
+            
             if (date == null)
                 throw new InvalidOperationException("Gamer is not available on the selected day.");
 
             var overlappingBooking = (await _bookingRepo.ListAsync(cancellationToken))
-                .Where(x => x.ProviderId == provicer.Id && x.StartTime.Date == fromTime.Date)
+                .Where(x => x.ProviderId == provider.Id && x.StartTime.Date == fromTime.Date)
                 .Any(x =>
                     x.StartTime < fromTime + duration &&
                     fromTime < x.StartTime + x.Duration
@@ -57,7 +58,7 @@ namespace GamingWithMe.Application.Handlers
             if (overlappingBooking)
                 throw new InvalidOperationException("Gamer is already booked during this time.");
 
-            if (fromTime.TimeOfDay < date.StartTime || fromTime.TimeOfDay + duration > date.EndTime)
+            if (fromTime.TimeOfDay < date.StartTime || fromTime.TimeOfDay + duration > date.StartTime.Add(date.Duration))
                 throw new InvalidOperationException("Booking is outside of gamer's availability hours.");
 
             return true; // All checks passed

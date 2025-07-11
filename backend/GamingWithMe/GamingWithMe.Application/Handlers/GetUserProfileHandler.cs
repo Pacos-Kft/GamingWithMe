@@ -30,14 +30,16 @@ namespace GamingWithMe.Application.Handlers
             //TODO use mapper
             //TODO include the correct fields
 
-            return new ProfileDto(
-                username: user.Username,
-                avatarurl: user.AvatarUrl,
-                bio: user.Bio,
-                games: user.Games?.Select(g => g.Game.Name).ToList() ?? new List<string>(),
-                languages: user.Languages?.Select(l => l.Language.Name).ToList() ?? new List<string>(),
-                joined: user.CreatedAt
-            );
+            //return new ProfileDto(
+            //    username: user.Username,
+            //    avatarurl: user.AvatarUrl,
+            //    bio: user.Bio,
+            //    games: user.Games?.Select(g => g.Game.Name).ToList() ?? new List<string>(),
+            //    languages: user.Languages?.Select(l => l.Language.Name).ToList() ?? new List<string>(),
+            //    joined: user.CreatedAt
+            //);
+
+            return null;
         }
     }
 }

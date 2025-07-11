@@ -27,14 +27,14 @@ namespace GamingWithMe.Application.Handlers
 
             var userid = kalapacs?.Id ?? throw new Exception("hiba");
 
-            var user = await _repo.GetByIdAsync(userid, cancellationToken, g => g.WeeklyAvailability);
+            var user = await _repo.GetByIdAsync(userid, cancellationToken, g => g.DailyAvailability);
 
             if (user == null)
             {
                 throw new InvalidOperationException("User not found");
             }
 
-            user.WeeklyAvailability.Clear();
+            user.DailyAvailability.Clear();
 
 
             foreach (var kvp in request.Hours.Days)
@@ -53,16 +53,16 @@ namespace GamingWithMe.Application.Handlers
                 }
 
 
-                var availability = new UserAvailability
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userid,
-                    DayOfWeek = day,
-                    StartTime = start,
-                    EndTime = end
-                };
+                //var availability = new UserAvailability
+                //{
+                //    Id = Guid.NewGuid(),
+                //    UserId = userid,
+                //    DayOfWeek = day,
+                //    StartTime = start,
+                //    EndTime = end
+                //};
 
-                await _arepo.AddAsync(availability);
+                //await _arepo.AddAsync(availability);
 
 
             }

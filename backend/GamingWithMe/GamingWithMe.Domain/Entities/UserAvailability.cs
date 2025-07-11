@@ -12,23 +12,23 @@ namespace GamingWithMe.Domain.Entities
         public Guid UserId { get; set; }
         public User User { get; set; }
 
-        public TimeSpan StartTime { get; set; } 
-        public TimeSpan EndTime { get; set; }   
-        public DayOfWeek DayOfWeek { get; set; }
+        public DateTime Date { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan Duration { get; set; }
+        public bool IsAvailable { get; set; } = true;
 
         public UserAvailability()
         {
-            
         }
 
-        public UserAvailability(Guid gamerId, TimeSpan startTime, TimeSpan endTime, DayOfWeek dayOfWeek)
+        public UserAvailability(Guid userId, DateTime date, TimeSpan startTime, TimeSpan duration)
         {
             Id = Guid.NewGuid();
-            UserId = gamerId;
+            UserId = userId;
+            Date = date.Date;
             StartTime = startTime;
-            EndTime = endTime;
-            DayOfWeek = dayOfWeek;
+            Duration = duration;
+            IsAvailable = true;
         }
     }
-
 }

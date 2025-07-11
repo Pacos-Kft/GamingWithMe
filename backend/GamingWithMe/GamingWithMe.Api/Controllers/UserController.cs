@@ -32,6 +32,15 @@ namespace GamingWithMe.Api.Controllers
             return profile == null ? NotFound() : Ok(profile);
         }
 
+        [HttpGet("profiles")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<ProfileDto>>> GetProfiles()
+        {
+            var profiles = await _mediator.Send(new GetUserProfilesQuery());
+
+            return profiles == null ? NotFound() : Ok(profiles);
+        }
+
 
         [HttpPost("languages")]
         public async Task<IActionResult> AddLanguage([FromBody] Guid languageId)
@@ -95,6 +104,26 @@ namespace GamingWithMe.Api.Controllers
             var activity = await _mediator.Send(new SetAvailableHoursCommand(userId, dto));
 
             return Ok(activity);
+        }
+
+        [HttpPost("daily-availability")]
+        public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)
+        {
+            var userId = GetUserId();
+
+            var result = await _mediator.Send(new SetDailyAvailabilityCommand(userId, availability));
+
+            return result ? Ok(true) : BadRequest("Failed to set availability");
+        }
+
+        [HttpGet("daily-availability/{date}")]
+        public async Task<IActionResult> GetDailyAvailability(DateTime date)
+        {
+            var userId = GetUserId();
+
+            var availability = await _mediator.Send(new GetDailyAvailabilityQuery(userId, date));
+
+            return Ok(availability);
         }
 
         [HttpPost("tags")]
