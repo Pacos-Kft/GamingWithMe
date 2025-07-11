@@ -38,7 +38,7 @@ namespace GamingWithMe.Application.Handlers
                     Currency = "usd",
 
                 },
-
+                
             };
 
             var stripeProduct = await _productService.CreateAsync(productOptions);
