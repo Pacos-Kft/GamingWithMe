@@ -20,8 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GamingWithMe.Application\GamingWithMe.Application.csproj" />
     <ProjectReference Include="..\GamingWithMe.Domain\GamingWithMe.Domain.csproj" />
+    <ProjectReference Include="..\GamingWithMe.Application\GamingWithMe.Application.csproj" />
   </ItemGroup>
 
 </Project>
