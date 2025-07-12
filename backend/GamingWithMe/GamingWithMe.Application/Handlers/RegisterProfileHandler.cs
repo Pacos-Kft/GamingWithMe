@@ -4,6 +4,7 @@ using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,8 +68,17 @@ namespace GamingWithMe.Application.Handlers
 
             //}
 
+
+
+
             await _userRepo.AddAsync(new User(user.Id, dto.username));
-            await _emailService.SendEmailAsync(dto.email, "Welcome to GamingWithMe!", "");
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            var confirmationLink = $"https://localhost:7091/api/account/confirm-email?userId={user.Id}&token={encodedToken}";
+
+            await _emailService.SendEmailAsync(dto.email, "Welcome to GamingWithMe!", confirmationLink);
             return user.Id;
             
         }

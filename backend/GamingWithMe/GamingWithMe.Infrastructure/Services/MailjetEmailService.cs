@@ -54,7 +54,7 @@ namespace GamingWithMe.Infrastructure.Services
                     }, {
                         "Variables",
                         new JObject {
-                            {"confirmation_link", "https://www.youtube.com/"}, 
+                            {"confirmation_link", link}, 
                             {"current_year", DateTime.UtcNow.Year}
                         }
                     }
