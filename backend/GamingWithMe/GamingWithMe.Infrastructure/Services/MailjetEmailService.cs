@@ -2,9 +2,9 @@ using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Domain.Entities;
 using Mailjet.Client;
 using Mailjet.Client.Resources;
-using Mailjet.Client.TransactionalEmails;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Services
@@ -13,15 +13,27 @@ namespace GamingWithMe.Infrastructure.Services
     {
         private readonly MailjetSettings _mailjetSettings;
 
-
         public MailjetEmailService(IOptions<MailjetSettings> mailjetSettings)
         {
             _mailjetSettings = mailjetSettings.Value;
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string? link)
+        public async Task SendEmailAsync(string toEmail, string subject, int templateId, Dictionary<string, string> variables)
         {
             var client = new MailjetClient(_mailjetSettings.ApiKey, _mailjetSettings.SecretKey);
+
+            var mailjetVariables = new JObject
+            {
+                { "current_year", DateTime.UtcNow.Year.ToString() }
+            };
+
+            if (variables != null)
+            {
+                foreach (var variable in variables)
+                {
+                    mailjetVariables.Add(variable.Key, variable.Value);
+                }
+            }
 
             MailjetRequest request = new MailjetRequest
             {
@@ -32,7 +44,7 @@ namespace GamingWithMe.Infrastructure.Services
                     {
                         "From",
                         new JObject {
-                            {"Email", _mailjetSettings.SenderEmail}, 
+                            {"Email", _mailjetSettings.SenderEmail},
                             {"Name", _mailjetSettings.SenderName}
                         }
                     }, {
@@ -44,7 +56,7 @@ namespace GamingWithMe.Infrastructure.Services
                         }
                     }, {
                         "TemplateID",
-                        6953989
+                        templateId
                     }, {
                         "TemplateLanguage",
                         true
@@ -53,10 +65,7 @@ namespace GamingWithMe.Infrastructure.Services
                         subject
                     }, {
                         "Variables",
-                        new JObject {
-                            {"confirmation_link", link}, 
-                            {"current_year", DateTime.UtcNow.Year}
-                        }
+                        mailjetVariables
                     }
                 }
             });

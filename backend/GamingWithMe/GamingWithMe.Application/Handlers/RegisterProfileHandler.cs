@@ -76,9 +76,16 @@ namespace GamingWithMe.Application.Handlers
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
+            // This URL is for local development and testing.
             var confirmationLink = $"https://localhost:7091/api/account/confirm-email?userId={user.Id}&token={encodedToken}";
 
-            await _emailService.SendEmailAsync(dto.email, "Welcome to GamingWithMe!", confirmationLink);
+            var emailVariables = new Dictionary<string, string>
+            {
+                { "confirmation_link", confirmationLink }
+            };
+
+            // Use Template ID for registration confirmation
+            await _emailService.SendEmailAsync(dto.email, "Welcome to GamingWithMe!", 6953989, emailVariables);
             return user.Id;
             
         }
