@@ -6,6 +6,7 @@ namespace GamingWithMe.Application.Dtos
         DateTime Date,
         string StartTime,
         string EndTime,
-        string SessionDuration
+        string SessionDuration,
+        long price
     );
 }

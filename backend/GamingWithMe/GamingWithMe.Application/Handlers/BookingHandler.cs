@@ -15,61 +15,46 @@ namespace GamingWithMe.Application.Handlers
 {
     public class BookingHandler : IRequestHandler<BookingCommand, bool>
     {
-        private readonly IAsyncRepository<User> _userRepo;
-        private readonly IAsyncRepository<Booking> _bookingRepo;
+        private readonly IAsyncRepository<User> _userrepo;
+        private readonly IAsyncRepository<Booking> _bookingrepo;
 
-        public BookingHandler(
-            IAsyncRepository<User> userRepo,
-            IAsyncRepository<Booking> bookingRepo)
+
+        public BookingHandler(IAsyncRepository<User> userrepo, IAsyncRepository<Booking> bookingrepo)
         {
-            _userRepo = userRepo;
-            _bookingRepo = bookingRepo;
+            _userrepo = userrepo;
+            _bookingrepo = bookingrepo;
         }
 
         public async Task<bool> Handle(BookingCommand request, CancellationToken cancellationToken)
         {
-            var client = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.customerId);
+            var customer = (await _userrepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.customerId);
 
-            var provider = await _userRepo.GetByIdAsync(request.providerId, cancellationToken,g=> g.DailyAvailability);
+            //var provider = await _context.Users
+            //    .Include(u => u.DailyAvailability)
+            //    .FirstOrDefaultAsync(x => x.Id == request.ProviderId, cancellationToken);
 
-            if (provider == null || client == null)
-                throw new InvalidOperationException("Gamer or User not found");
+            var provider = (await _userrepo.GetByIdAsync(request.providerId, cancellationToken, x => x.DailyAvailability));
 
-            if (!provider.IsActive)
-                throw new InvalidOperationException("Gamer is not currently active and cannot accept bookings.");
+            if (provider == null || customer == null)
+                throw new InvalidOperationException("Provider or customer not found");
 
+            var appointment = provider.DailyAvailability.FirstOrDefault(x => x.Id == request.appointmentId);
 
+            if (appointment == null)
+            {
+                throw new InvalidOperationException("Appointment doesnt exist at current user");
+            }
 
-            if (!DateTime.TryParse(request.BookingDetailsDto.timeRange.From, out var fromTime))
-                throw new InvalidOperationException("Invalid time format: From");
+            if (!appointment.IsAvailable)
+            {
+                throw new Exception("Appointment is already taken");
+            }
 
-            if (!TimeSpan.TryParse(request.BookingDetailsDto.timeRange.Duration, out var duration))
-                throw new InvalidOperationException("Invalid time format: Duration");
+            var start = appointment.Date.Add(appointment.StartTime);
 
-            if (duration <= TimeSpan.Zero)
-                throw new InvalidOperationException("Invalid time range: End must be after Start");
+            var booking = new Booking(provider.Id, customer.Id, start , appointment.Duration ,request.PaymentIntentId);
 
-            var date = provider.DailyAvailability.FirstOrDefault(x => x.Date.DayOfWeek == fromTime.DayOfWeek);
-
-            if (date == null)
-                throw new InvalidOperationException("Gamer is not available on the selected day.");
-
-            var overlappingBooking = (await _bookingRepo.ListAsync(cancellationToken))
-            .Where(x => x.ProviderId == provider.Id && x.StartTime.Date == fromTime.Date)
-            .Any(x =>
-                x.StartTime < fromTime + duration &&
-                fromTime < x.StartTime + x.Duration
-            );
-
-            if (overlappingBooking)
-                throw new InvalidOperationException("Gamer is already booked during this time.");
-
-            if (fromTime.TimeOfDay < date.StartTime || fromTime.TimeOfDay + duration > date.StartTime.Add(date.Duration))
-                throw new InvalidOperationException("Booking is outside of gamer's availability hours.");
-
-            var booking = new Booking(provider.Id, client.Id, fromTime, duration,request.PaymentIntentId);
-
-            await _bookingRepo.AddAsync(booking, cancellationToken);
+            await _bookingrepo.AddAsync(booking);
 
             return true;
         }

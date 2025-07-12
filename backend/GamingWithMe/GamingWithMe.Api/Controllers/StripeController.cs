@@ -18,10 +18,25 @@ using System.Text.Json;
 
 namespace GamingWithMe.Api.Controllers
 {
-    public class PaymentRequest
+    public class CreateCouponRequest
     {
+        public string Name { get; set; }
+        public decimal PercentOff { get; set; }
+        public int DurationInDays { get; set; }
+        public int? MaxRedemptions { get; set; }
+        public string? CouponId { get; set; }
+    }
+
+    public class ApplyCouponRequest
+    {
+        public string CouponCode { get; set; }
         public string PriceId { get; set; }
-        public BookingCommand BookingDetails { get; set; }
+    }
+
+    public class PaymentWithCouponRequest
+    {
+        public Guid AppointmentId { get; set; }
+        public string? CouponId { get; set; }
     }
 
 
@@ -38,10 +53,11 @@ namespace GamingWithMe.Api.Controllers
         private readonly IMediator _mediator;
         private readonly string _webhookSecret;
         private readonly IAsyncRepository<User> _gamerRepo;
+        private readonly IAsyncRepository<Domain.Entities.Discount> _discountRepo;
 
 
 
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService)
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo)
         {
             _model = model.Value;
             _token = token;
@@ -53,11 +69,12 @@ namespace GamingWithMe.Api.Controllers
             _webhookSecret = "whsec_a502365718c2eabc23f204e03d5e5d26f9fc4bc595de1303ea802e992dd86bd3"; // Replace with your actual webhook signing secret
             _priceService = priceService;
             _gamerRepo = gamerRepo;
+            _discountRepo = discountRepo;
         }
 
         [HttpPost("pay/{mentorId}")]
         [Authorize]
-        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] BookingDetailsDto request)
+        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] PaymentWithCouponRequest request /*[FromBody] Guid appointmentId*/ /*[FromBody] BookingDetailsDto request*/)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -66,38 +83,47 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var cmd = new BookingCommand(mentorId, userId,"", request);
+            //var cmd = new BookingCommand(mentorId, userId,"", request);
+            var cmd = (mentorId, userId, request.AppointmentId);
 
-            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x=> x.Products);
+            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x => x.DailyAvailability, q => q.Discounts);
 
-            if (gamer == null) {
+            if (gamer == null)
+            {
                 return BadRequest();
             }
 
-            var product = gamer.Products.FirstOrDefault();
+            //var product = gamer.Products.FirstOrDefault();
 
-            if (product == null) {
-                return NotFound();
-            }
+            //if (product == null) {
+            //    return NotFound();
+            //}
 
             var connectedAccount = gamer.StripeAccount;
+
+            var schedule = gamer.DailyAvailability.FirstOrDefault(x => x.Id == request.AppointmentId);
+            if (schedule == null)
+            {
+                return BadRequest("Schedule doesnt exist");
+            }
 
 
             try
             {
-                var validationCommand = new ValidateBookingCommand(cmd);
+                var validationCommand = new ValidateBookingCommand(cmd.mentorId, cmd.userId, cmd.AppointmentId);
                 await _mediator.Send(validationCommand);
 
                 StripeConfiguration.ApiKey = _model.SecretKey;
 
 
                 // Retrieve the actual price information
-                var price = _priceService.Get(product.StripePriceId);
-                if (price == null)
-                    return BadRequest("Invalid price ID");
+                //var price = _priceService.Get(product.StripePriceId);
+                //if (price == null)
+                //    return BadRequest("Invalid price ID");
 
-                // Calculate fee as 5% of the actual price
-                long applicationFee = (long)(price.UnitAmount * 0.20);
+                // Calculate fee as 10% of the actual price
+                var price = schedule.Price * 100;
+                long applicationFee = (long)(price * 0.10);
 
                 var options = new SessionCreateOptions
                 {
@@ -105,8 +131,18 @@ namespace GamingWithMe.Api.Controllers
                     {
                         new SessionLineItemOptions
                         {
-                            Price = product.StripePriceId,
-                            Quantity = 1,
+                            //Price = product.StripePriceId,
+                            //Quantity = 1,
+                            PriceData = new SessionLineItemPriceDataOptions
+                            {
+                                Currency = "usd",
+                                ProductData = new SessionLineItemPriceDataProductDataOptions
+                                {
+                                    Name = "Session"
+                                },
+                                UnitAmount = price,
+                            },
+                            Quantity = 1
                         }
                     },
                     Mode = "payment",
@@ -128,6 +164,24 @@ namespace GamingWithMe.Api.Controllers
                     }
                 };
 
+                if (!string.IsNullOrEmpty(request.CouponId))
+                {
+                    var discount = gamer.Discounts.FirstOrDefault(x => x.StripeId == request.CouponId);
+
+                    if (discount != null)
+                    {
+                        options.Discounts = new List<SessionDiscountOptions>
+                        {
+                            new SessionDiscountOptions
+                            {
+                                Coupon = request.CouponId
+                            }
+                        };
+                    }
+
+
+                }
+
                 //options.Customer = "cus_SaCXeZDWJH5t4L";
 
                 var service = new SessionService();
@@ -137,7 +191,7 @@ namespace GamingWithMe.Api.Controllers
                 return Ok(new
                 {
                     CheckoutUrl = session.Url,
-                    PriceAmount = price.UnitAmount,
+                    PriceAmount = price,
                     ApplicationFee = applicationFee,
                     SessionId = session.Id,
                     ConnectedAccount = connectedAccount
@@ -229,7 +283,7 @@ namespace GamingWithMe.Api.Controllers
                         var bookingDetailsJson = session.Metadata["bookingDetails"];
                         var booking = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
 
-                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.BookingDetailsDto);
+                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.appointmentId);
 
 
                         // Create the booking
@@ -258,7 +312,7 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var product = await _mediator.Send(new CreateProductCommand(userId,productDto));
+            var product = await _mediator.Send(new CreateProductCommand(userId, productDto));
 
             return Ok(product);
         }
@@ -276,11 +330,12 @@ namespace GamingWithMe.Api.Controllers
 
             var _customer = await _customerService.CreateAsync(customerOptions);
 
-            return new {customer};
+            return new { customer };
         }
 
         [HttpGet("get-all-products")]
-        public IActionResult GetAllProducts() {
+        public IActionResult GetAllProducts()
+        {
             StripeConfiguration.ApiKey = _model.SecretKey;
 
             var options = new ProductListOptions { Expand = new List<string> { "data.default_price" } };
@@ -298,18 +353,167 @@ namespace GamingWithMe.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
 
-            if(userId == null)
+            if (userId == null)
             {
                 return BadRequest("User not found in controller");
             }
 
-            var (link,account) = await _mediator.Send(new CreateStripeAccountCommand(userId));
+            var (link, account) = await _mediator.Send(new CreateStripeAccountCommand(userId));
 
             return Ok(new
             {
                 OnboardingUrl = link.Url,
-                ConnectedAccountId = account.Id 
+                ConnectedAccountId = account.Id
             });
+        }
+
+        [HttpPost("create-coupon")]
+        [Authorize]
+        public async Task<IActionResult> CreateCoupon([FromBody] CreateCouponRequest request)
+        {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x=> x.UserId == userId);
+
+            if (user == null) {
+                return BadRequest("User not found");
+            }
+
+
+            try
+            {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                var couponOptions = new CouponCreateOptions
+                {
+                    Name = request.Name,
+                    PercentOff = (decimal?)request.PercentOff,
+                    Duration = "once", // Can be "forever", "once", or "repeating"
+                    Id = request.CouponId ?? null, // Custom ID if provided
+                    MaxRedemptions = request.MaxRedemptions
+                };
+
+                // Set expiration if duration in days is provided
+                if (request.DurationInDays > 0)
+                {
+                    couponOptions.RedeemBy = DateTime.UtcNow.AddDays(request.DurationInDays);
+                }
+
+                var couponService = new CouponService();
+                var coupon = await couponService.CreateAsync(couponOptions);
+
+                var myDiscount = new Domain.Entities.Discount
+                {
+                    StripeId = coupon.Id,
+                    Name = coupon.Name,
+                    PercentOff = request.PercentOff,
+                    Duration = request.DurationInDays,
+                    MaxRedemptions = request.MaxRedemptions,
+                    UserId = user.Id
+                };
+
+                await _discountRepo.AddAsync(myDiscount);
+
+                return Ok(new
+                {
+                    CouponId = coupon.Id,
+                    Name = coupon.Name,
+                    PercentOff = coupon.PercentOff,
+                    Valid = true,
+                    ExpiresAt = coupon.RedeemBy
+                });
+            }
+            catch (StripeException ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpGet("validate-coupon/{couponCode}")]
+        public async Task<IActionResult> ValidateCoupon(string couponCode)
+        {
+            try
+            {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                var couponService = new CouponService();
+                var coupon = await couponService.GetAsync(couponCode);
+
+                bool isValid = coupon != null && coupon.Valid;
+
+                return Ok(new
+                {
+                    Valid = isValid,
+                    PercentOff = coupon?.PercentOff,
+                    Name = coupon?.Name,
+                    ExpiresAt = coupon?.RedeemBy
+                });
+            }
+            catch (StripeException)
+            {
+                return Ok(new { Valid = false });
+            }
+        }
+
+        [HttpPost("apply-coupon")]
+        public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponRequest request)
+        {
+            try
+            {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                // Validate the coupon first
+                var couponService = new CouponService();
+                var coupon = await couponService.GetAsync(request.CouponCode);
+
+                if (coupon == null)
+                {
+                    return BadRequest(new { Error = "Invalid coupon code" });
+                }
+
+                // Validate that the coupon is still valid
+                if (!coupon.Valid)
+                {
+                    return BadRequest(new { Error = "Coupon is expired or maximum redemptions reached" });
+                }
+
+                // Rest of the method remains unchanged
+                var priceService = new PriceService();
+                var price = await priceService.GetAsync(request.PriceId);
+
+                if (price == null)
+                {
+                    return BadRequest(new { Error = "Invalid price ID" });
+                }
+
+                // Calculate discounted price
+                var originalAmount = price.UnitAmount ?? 0;
+                var discountedAmount = originalAmount;
+
+                if (coupon.PercentOff.HasValue)
+                {
+                    discountedAmount = originalAmount - (originalAmount * (long)coupon.PercentOff.Value / 100);
+                }
+                else if (coupon.AmountOff.HasValue)
+                {
+                    discountedAmount = originalAmount - coupon.AmountOff.Value;
+                    if (discountedAmount < 0) discountedAmount = 0;
+                }
+
+                return Ok(new
+                {
+                    CouponCode = coupon.Id,
+                    OriginalPrice = originalAmount,
+                    DiscountedPrice = discountedAmount,
+                    Discount = originalAmount - discountedAmount,
+                    PercentOff = coupon.PercentOff
+                });
+            }
+            catch (StripeException ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
         }
 
     }

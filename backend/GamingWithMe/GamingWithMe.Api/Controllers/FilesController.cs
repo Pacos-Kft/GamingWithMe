@@ -21,16 +21,20 @@ namespace GamingWithMe.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> UploadFileAsync(IFormFile file, string? prefix)
         {
+            var key = string.IsNullOrEmpty(prefix) ? file.FileName : $"{prefix?.TrimEnd('/')}/{file.FileName}";
             var request = new PutObjectRequest()
             {
                 BucketName = bucketname,
-                Key = string.IsNullOrEmpty(prefix) ? file.FileName : $"{prefix?.TrimEnd('/')}/{file.FileName}",
+                Key = key,
                 InputStream = file.OpenReadStream()
             };
 
             request.Metadata.Add("Content-Type", file.ContentType);
             await _s3Client.PutObjectAsync(request);
-            return Ok($"File {prefix}/{file.FileName} uploaded to s3 yesss");
+            
+            var fileUrl = $"https://{bucketname}.s3.{_s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{key}";
+
+            return Ok(new { Url = fileUrl });
         }
 
         [HttpGet]
@@ -42,16 +46,10 @@ namespace GamingWithMe.Api.Controllers
                 Prefix = prefix
             };
             var result = await _s3Client.ListObjectsV2Async(request);
-            var s3Objects = result.S3Objects.Select(x =>
+            var s3Objects = result.S3Objects.Select(s3Object =>
             {
-                var urlRequest = new GetPreSignedUrlRequest()
-                {
-                    BucketName = bucketname,
-                    Key = x.Key,
-                    Expires = DateTime.UtcNow.AddMinutes(1)
-                };
-
-                return new S3ObjectDto(x.Key.ToString(), _s3Client.GetPreSignedURL(urlRequest));
+                var fileUrl = $"https://{bucketname}.s3.{_s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{s3Object.Key}";
+                return new S3ObjectDto(s3Object.Key, fileUrl);
             });
 
             return Ok(s3Objects);
