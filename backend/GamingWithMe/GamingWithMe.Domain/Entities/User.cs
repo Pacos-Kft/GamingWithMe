@@ -34,6 +34,7 @@ namespace GamingWithMe.Domain.Entities
         public ICollection<Product> Products { get; set; }
         public ICollection<UserGame> Games { get; set; }
         public ICollection<UserTag> Tags { get; set; }
+        public ICollection<Discount> Discounts { get; set; }
 
 
 
@@ -66,6 +67,7 @@ namespace GamingWithMe.Domain.Entities
             DailyAvailability = new List<UserAvailability>();
             Products = new List<Product>();
             Tags = new List<UserTag>();
+            Discounts = new List<Discount>();
         }
     }
 }

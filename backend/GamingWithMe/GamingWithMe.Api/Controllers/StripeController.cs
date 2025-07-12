@@ -36,7 +36,7 @@ namespace GamingWithMe.Api.Controllers
     public class PaymentWithCouponRequest
     {
         public Guid AppointmentId { get; set; }
-        public string? CouponCode { get; set; }
+        public string? CouponId { get; set; }
     }
 
 
@@ -53,10 +53,11 @@ namespace GamingWithMe.Api.Controllers
         private readonly IMediator _mediator;
         private readonly string _webhookSecret;
         private readonly IAsyncRepository<User> _gamerRepo;
+        private readonly IAsyncRepository<Domain.Entities.Discount> _discountRepo;
 
 
 
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService)
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo)
         {
             _model = model.Value;
             _token = token;
@@ -68,6 +69,7 @@ namespace GamingWithMe.Api.Controllers
             _webhookSecret = "whsec_a502365718c2eabc23f204e03d5e5d26f9fc4bc595de1303ea802e992dd86bd3"; // Replace with your actual webhook signing secret
             _priceService = priceService;
             _gamerRepo = gamerRepo;
+            _discountRepo = discountRepo;
         }
 
         [HttpPost("pay/{mentorId}")]
@@ -82,11 +84,12 @@ namespace GamingWithMe.Api.Controllers
             }
 
             //var cmd = new BookingCommand(mentorId, userId,"", request);
-            var cmd = (mentorId, userId,  request.AppointmentId); 
+            var cmd = (mentorId, userId, request.AppointmentId);
 
-            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x=> x.DailyAvailability);
+            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x => x.DailyAvailability, q => q.Discounts);
 
-            if (gamer == null) {
+            if (gamer == null)
+            {
                 return BadRequest();
             }
 
@@ -99,7 +102,8 @@ namespace GamingWithMe.Api.Controllers
             var connectedAccount = gamer.StripeAccount;
 
             var schedule = gamer.DailyAvailability.FirstOrDefault(x => x.Id == request.AppointmentId);
-            if (schedule == null) {
+            if (schedule == null)
+            {
                 return BadRequest("Schedule doesnt exist");
             }
 
@@ -160,15 +164,22 @@ namespace GamingWithMe.Api.Controllers
                     }
                 };
 
-                if (!string.IsNullOrEmpty(request.CouponCode))
+                if (!string.IsNullOrEmpty(request.CouponId))
                 {
-                    options.Discounts = new List<SessionDiscountOptions>
+                    var discount = gamer.Discounts.FirstOrDefault(x => x.StripeId == request.CouponId);
+
+                    if (discount != null)
                     {
-                        new SessionDiscountOptions
+                        options.Discounts = new List<SessionDiscountOptions>
                         {
-                            Coupon = request.CouponCode
-                        }
-                    };
+                            new SessionDiscountOptions
+                            {
+                                Coupon = request.CouponId
+                            }
+                        };
+                    }
+
+
                 }
 
                 //options.Customer = "cus_SaCXeZDWJH5t4L";
@@ -301,7 +312,7 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var product = await _mediator.Send(new CreateProductCommand(userId,productDto));
+            var product = await _mediator.Send(new CreateProductCommand(userId, productDto));
 
             return Ok(product);
         }
@@ -319,11 +330,12 @@ namespace GamingWithMe.Api.Controllers
 
             var _customer = await _customerService.CreateAsync(customerOptions);
 
-            return new {customer};
+            return new { customer };
         }
 
         [HttpGet("get-all-products")]
-        public IActionResult GetAllProducts() {
+        public IActionResult GetAllProducts()
+        {
             StripeConfiguration.ApiKey = _model.SecretKey;
 
             var options = new ProductListOptions { Expand = new List<string> { "data.default_price" } };
@@ -341,17 +353,17 @@ namespace GamingWithMe.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
 
-            if(userId == null)
+            if (userId == null)
             {
                 return BadRequest("User not found in controller");
             }
 
-            var (link,account) = await _mediator.Send(new CreateStripeAccountCommand(userId));
+            var (link, account) = await _mediator.Send(new CreateStripeAccountCommand(userId));
 
             return Ok(new
             {
                 OnboardingUrl = link.Url,
-                ConnectedAccountId = account.Id 
+                ConnectedAccountId = account.Id
             });
         }
 
@@ -359,6 +371,16 @@ namespace GamingWithMe.Api.Controllers
         [Authorize]
         public async Task<IActionResult> CreateCoupon([FromBody] CreateCouponRequest request)
         {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x=> x.UserId == userId);
+
+            if (user == null) {
+                return BadRequest("User not found");
+            }
+
+
             try
             {
                 StripeConfiguration.ApiKey = _model.SecretKey;
@@ -380,6 +402,18 @@ namespace GamingWithMe.Api.Controllers
 
                 var couponService = new CouponService();
                 var coupon = await couponService.CreateAsync(couponOptions);
+
+                var myDiscount = new Domain.Entities.Discount
+                {
+                    StripeId = coupon.Id,
+                    Name = coupon.Name,
+                    PercentOff = request.PercentOff,
+                    Duration = request.DurationInDays,
+                    MaxRedemptions = request.MaxRedemptions,
+                    UserId = user.Id
+                };
+
+                await _discountRepo.AddAsync(myDiscount);
 
                 return Ok(new
                 {
