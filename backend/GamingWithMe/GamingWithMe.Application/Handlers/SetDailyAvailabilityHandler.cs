@@ -68,7 +68,8 @@ namespace GamingWithMe.Application.Handlers
                     user.Id,
                     request.Availability.Date,
                     currentTime,
-                    sessionDuration
+                    sessionDuration,
+                    request.Availability.price
                 );
 
                 await _availabilityRepo.AddAsync(availability, cancellationToken);
