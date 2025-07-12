@@ -16,11 +16,13 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IAsyncRepository<User> _userRepo;
+        private readonly IEmailService _emailService;
 
-        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<User> regularRepo)
+        public RegisterProfileHandler(UserManager<IdentityUser> userManager, IAsyncRepository<User> regularRepo, IEmailService emailService)
         {
             _userManager = userManager;
             _userRepo = regularRepo;
+            _emailService = emailService;
         }
 
 
@@ -66,6 +68,7 @@ namespace GamingWithMe.Application.Handlers
             //}
 
             await _userRepo.AddAsync(new User(user.Id, dto.username));
+            await _emailService.SendEmailAsync(dto.email, "Welcome to GamingWithMe!", "");
             return user.Id;
             
         }

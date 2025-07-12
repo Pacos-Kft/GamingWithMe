@@ -8,6 +8,7 @@ using GamingWithMe.Domain.Entities;
 using GamingWithMe.Infrastructure.Data;
 using GamingWithMe.Infrastructure.DependencyInjection;
 using GamingWithMe.Infrastructure.Repositories;
+using GamingWithMe.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
@@ -88,6 +89,10 @@ builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(UserProfile).Assembly));
+
+builder.Services.Configure<MailjetSettings>(builder.Configuration.GetSection("MailjetSettings"));
+builder.Services.AddScoped<IEmailService, MailjetEmailService>();
+
 
 //builder.Services.AddInfrastructure(builder.Configuration);
 
