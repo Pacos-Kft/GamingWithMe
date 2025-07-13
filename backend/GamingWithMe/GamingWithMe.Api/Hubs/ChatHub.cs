@@ -14,7 +14,7 @@ namespace GamingWithMe.Api.Hubs
         private readonly IMediator _mediator;
         private readonly IAsyncRepository<User> _repo;
 
-
+        private static readonly Dictionary<string, string> userConnectionMap = new Dictionary<string, string>();
         public ChatHub(IMediator mediator, IAsyncRepository<User> repo)
         {
             _mediator = mediator;
@@ -33,11 +33,33 @@ namespace GamingWithMe.Api.Hubs
             var command = new SendMessageCommand(sender.Id, receiverId, message);
             var result = await _mediator.Send(command);
 
-            // Send to specific user if online
-            await Clients.User(receiverId.ToString()).SendAsync("ReceiveMessage", result);
+            var receiver = await _repo.GetByIdAsync(receiverId);
+
+            if(userConnectionMap.TryGetValue(receiver.UserId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("ReceiveMessage", message);
+
+            }
+
+            //// Send to specific user if online
+            //await Clients.User(receiverId.ToString()).SendAsync("ReceiveMessage", result);
 
             // Also send back to sender to confirm
-            await Clients.Caller.SendAsync("MessageSent", result);
+            await Clients.Caller.SendAsync("ReceiveMessage", result);
+        }
+
+        public override Task OnConnectedAsync()
+        {
+            var userId = Context.UserIdentifier;
+            userConnectionMap[userId] = Context.ConnectionId;
+            return base.OnConnectedAsync();
+        }
+
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            var userId = Context.UserIdentifier;
+            userConnectionMap.Remove(userId);
+            return base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinGroup(string groupName)

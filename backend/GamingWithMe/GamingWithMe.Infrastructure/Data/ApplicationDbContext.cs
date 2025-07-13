@@ -28,6 +28,7 @@ namespace GamingWithMe.Infrastructure.Data
         public DbSet<GameEvent> GameEvents => Set<GameEvent>();
         public DbSet<GameEasterEgg> GameEasterEggs => Set<GameEasterEgg>();
         public DbSet<Discount> Discounts => Set<Discount>();
+        public DbSet<Message> Messages => Set<Message>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
