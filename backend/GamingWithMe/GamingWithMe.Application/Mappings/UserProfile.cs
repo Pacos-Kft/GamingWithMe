@@ -35,7 +35,6 @@ namespace GamingWithMe.Application.Mappings
                     )).ToList()))
                 .ForMember(d => d.joined, opt => opt.MapFrom(src => src.CreatedAt));
             
-            // Additional mappings for nested DTOs if needed
             CreateMap<Booking, BookingSummaryDto>()
                 .ForMember(d => d.CustomerName, opt => opt.MapFrom(src => src.Customer.Username));
             
