@@ -9,6 +9,7 @@ using System;
 using System.Security.Claims;
 using static System.Reflection.Metadata.BlobBuilder;
 using GamingWithMe.Application.Dtos;
+using System.IO;
 
 namespace GamingWithMe.Api.Controllers
 {
@@ -23,9 +24,9 @@ namespace GamingWithMe.Api.Controllers
 
         public UserController(IMediator mediator) => _mediator = mediator;
 
-        [HttpGet]
+        [HttpGet("profile/{username}")]
         [AllowAnonymous]
-        public async Task<ActionResult<ProfileDto>> GetProfile([FromQuery] string username)
+        public async Task<ActionResult<ProfileDto>> GetProfile(string username)
         {
             var profile = await _mediator.Send(new GetUserProfileQuery(username));
 
@@ -34,11 +35,33 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpGet("profiles")]
         [AllowAnonymous]
-        public async Task<ActionResult<List<ProfileDto>>> GetProfiles()
+        public async Task<ActionResult<List<ProfileDto>>> GetProfiles([FromQuery] string? tag = null)
         {
-            var profiles = await _mediator.Send(new GetUserProfilesQuery());
+            var profiles = await _mediator.Send(new GetUserProfilesQuery(tag));
 
             return profiles == null ? NotFound() : Ok(profiles);
+        }
+
+        [HttpPut("bio")]
+        public async Task<IActionResult> UpdateBio([FromBody] UpdateBioDto dto)
+        {
+            var userId = GetUserId();
+            var result = await _mediator.Send(new UpdateUserBioCommand(userId, dto.Bio));
+            return result ? Ok() : NotFound("User not found.");
+        }
+
+        [HttpPut("avatar")]
+        public async Task<IActionResult> UpdateAvatar(IFormFile avatarFile)
+        {
+            if (avatarFile == null || avatarFile.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
+
+            var userId = GetUserId();
+            var newAvatarUrl = await _mediator.Send(new UpdateAvatarCommand(userId, avatarFile));
+
+            return Ok(new { AvatarUrl = newAvatarUrl });
         }
 
 
@@ -154,9 +177,10 @@ namespace GamingWithMe.Api.Controllers
 
             return userId;
         }
+    }
 
-
-
-
+    public class UpdateBioDto
+    {
+        public string Bio { get; set; }
     }
 }
