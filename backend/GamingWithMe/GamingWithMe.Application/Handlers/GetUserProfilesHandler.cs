@@ -55,12 +55,9 @@ namespace GamingWithMe.Application.Handlers
             var gamesDict = allGames.ToDictionary(g => g.Id);
             var tagsDict = allTags.ToDictionary(t => t.Id);
 
-            // Map user entities to profile DTOs with proper relationships
-            var profiles = new List<ProfileDto>();
-            
+            // Link related entities
             foreach (var user in users)
             {
-                // Link related entities
                 foreach (var ul in user.Languages)
                 {
                     if (languagesDict.TryGetValue(ul.LanguageId, out var lang))
@@ -78,7 +75,19 @@ namespace GamingWithMe.Application.Handlers
                     if (tagsDict.TryGetValue(ut.TagId, out var tag))
                         ut.Tag = tag;
                 }
-                
+            }
+
+            var filteredUsers = users.AsEnumerable();
+            if (!string.IsNullOrEmpty(request.Tag))
+            {
+                filteredUsers = users.Where(u => u.Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals(request.Tag, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Map user entities to profile DTOs with proper relationships
+            var profiles = new List<ProfileDto>();
+            
+            foreach (var user in filteredUsers)
+            {
                 // Map the user to a profile DTO with all the linked data
                 var profile = _mapper.Map<ProfileDto>(user);
                 profiles.Add(profile);
