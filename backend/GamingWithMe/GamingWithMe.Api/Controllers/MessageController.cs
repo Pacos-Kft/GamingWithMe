@@ -3,9 +3,11 @@ using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
 using GamingWithMe.Domain.Entities;
+using GamingWithMe.Infrastructure.Data;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace GamingWithMe.Api.Controllers
@@ -17,11 +19,26 @@ namespace GamingWithMe.Api.Controllers
     {
         private readonly IMediator _mediator;
         private readonly IAsyncRepository<User> _repo;
+        private readonly ApplicationDbContext _context;
 
-        public MessageController(IMediator mediator, IAsyncRepository<User> repo)
+        public MessageController(IMediator mediator, IAsyncRepository<User> repo, ApplicationDbContext context)
         {
             _mediator = mediator;
             _repo = repo;
+            _context = context;
+        }
+
+        [HttpGet("{recipientId}")]
+        public async Task<IActionResult> GetConversationHistory(Guid recipientId)
+        {
+            var senderId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var messages = await _context.Messages
+                .Where(m => (m.SenderId == senderId && m.ReceiverId == recipientId) ||
+                             (m.SenderId == recipientId && m.ReceiverId == senderId))
+                .OrderBy(m => m.SentAt).ToListAsync();
+
+            return Ok(messages);
         }
 
         [HttpGet("conversation/{otherUserId}")]

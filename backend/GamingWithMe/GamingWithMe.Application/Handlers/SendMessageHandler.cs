@@ -27,7 +27,6 @@ namespace GamingWithMe.Application.Handlers
         {
             var message = new Message
             {
-                Id = Guid.NewGuid(),
                 SenderId = request.SenderId,
                 ReceiverId = request.ReceiverId,
                 Content = request.Content,

@@ -23,7 +23,7 @@ namespace GamingWithMe.Domain.Entities
             
         }
 
-        public Discount(string stripeId, string name, int duration, int? maxRedemptions, Guid userId, dec percentOff)
+        public Discount(string stripeId, string name, int duration, int? maxRedemptions, Guid userId, decimal percentOff)
         {
             Id = Guid.NewGuid();
             StripeId = stripeId;

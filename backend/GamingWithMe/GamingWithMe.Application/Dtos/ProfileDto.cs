@@ -16,7 +16,15 @@ namespace GamingWithMe.Application.Dtos
         List<BookingSummaryDto> bookings, 
         List<AvailabilitySlotDto> availability, 
         DateTime joined
-    );
+
+
+
+    )
+    {
+        public ProfileDto() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, new List<string>(), new List<string>(), new List<string>(), false, new List<BookingSummaryDto>(), new List<AvailabilitySlotDto>(), default) { }
+    }
+
+    
     
     public record BookingSummaryDto(
         Guid Id,
