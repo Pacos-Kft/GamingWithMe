@@ -1,4 +1,5 @@
-﻿using GamingWithMe.Application.Dtos;
+﻿using AutoMapper;
+using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
 using GamingWithMe.Domain.Entities;
@@ -14,32 +15,89 @@ namespace GamingWithMe.Application.Handlers
 {
     public class GetUserProfileHandler : IRequestHandler<GetUserProfileQuery, ProfileDto?>
     {
-        private readonly IAsyncRepository<User> _repo;
-        public GetUserProfileHandler(IAsyncRepository<User> repo)
-            => _repo = repo;
+        private readonly IAsyncRepository<User> _userRepo;
+        private readonly IAsyncRepository<Language> _languageRepo;
+        private readonly IAsyncRepository<Game> _gameRepo;
+        private readonly IAsyncRepository<Tag> _tagRepo;
+        private readonly IMapper _mapper;
+
+        public GetUserProfileHandler(
+            IAsyncRepository<User> userRepo,
+            IAsyncRepository<Language> languageRepo,
+            IAsyncRepository<Game> gameRepo,
+            IAsyncRepository<Tag> tagRepo,
+            IMapper mapper)
+        {
+            _userRepo = userRepo;
+            _languageRepo = languageRepo;
+            _gameRepo = gameRepo;
+            _tagRepo = tagRepo;
+            _mapper = mapper;
+        }
 
         public async Task<ProfileDto?> Handle(GetUserProfileQuery request, CancellationToken cancellationToken)
         {
-            var user = (await _repo.ListAsync(cancellationToken)).FirstOrDefault(x=> x.Username == request.username);
+            var user = (await _userRepo.ListAsync(cancellationToken,
+                u => u.Languages,
+                u => u.Games,
+                u => u.Tags,
+                u => u.DailyAvailability,
+                u => u.Products,
+                u => u.Bookings
+                )).FirstOrDefault(x => x.Username == request.username);
 
-            if (user == null)
+            if (user == null)   
             {
                 return null;
             }
 
-            //TODO use mapper
-            //TODO include the correct fields
+            // Manually load customers for bookings to avoid EF Core Include issue
+            if (user.Bookings.Any())
+            {
+                var customerIds = user.Bookings.Select(b => b.CustomerId).Distinct();
+                var customers = (await _userRepo.ListAsync(cancellationToken)).Where(u => customerIds.Contains(u.Id)).ToList();
+                var customerDict = customers.ToDictionary(c => c.Id);
 
-            //return new ProfileDto(
-            //    username: user.Username,
-            //    avatarurl: user.AvatarUrl,
-            //    bio: user.Bio,
-            //    games: user.Games?.Select(g => g.Game.Name).ToList() ?? new List<string>(),
-            //    languages: user.Languages?.Select(l => l.Language.Name).ToList() ?? new List<string>(),
-            //    joined: user.CreatedAt
-            //);
+                foreach (var booking in user.Bookings)
+                {
+                    if (customerDict.TryGetValue(booking.CustomerId, out var customer))
+                    {
+                        booking.Customer = customer;
+                    }
+                }
+            }
 
-            return null;
+
+            // Pre-load all related entities for efficient lookups
+            var allLanguages = await _languageRepo.ListAsync(cancellationToken);
+            var allGames = await _gameRepo.ListAsync(cancellationToken);
+            var allTags = await _tagRepo.ListAsync(cancellationToken);
+
+            // Create dictionaries for fast lookups
+            var languagesDict = allLanguages.ToDictionary(l => l.Id);
+            var gamesDict = allGames.ToDictionary(g => g.Id);
+            var tagsDict = allTags.ToDictionary(t => t.Id);
+
+            // Link related entities
+            foreach (var ul in user.Languages)
+            {
+                if (languagesDict.TryGetValue(ul.LanguageId, out var lang))
+                    ul.Language = lang;
+            }
+
+            foreach (var ug in user.Games)
+            {
+                if (gamesDict.TryGetValue(ug.GameId, out var game))
+                    ug.Game = game;
+            }
+
+            foreach (var ut in user.Tags)
+            {
+                if (tagsDict.TryGetValue(ut.TagId, out var tag))
+                    ut.Tag = tag;
+            }
+
+            return _mapper.Map<ProfileDto>(user);
         }
     }
 }
