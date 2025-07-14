@@ -28,6 +28,22 @@ namespace GamingWithMe.Api.Controllers
             _context = context;
         }
 
+        [HttpGet("partners")]
+        public async Task<ActionResult<List<ProfileDto>>> GetChatPartners()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = (await _repo.ListAsync()).FirstOrDefault(x => x.UserId == currentUserId);
+
+            if (user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var query = new GetChatPartnersQuery(user.Id);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
         [HttpGet("{recipientId}")]
         public async Task<IActionResult> GetConversationHistory(Guid recipientId)
         {

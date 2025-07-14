@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GamingWithMe.Infrastructure.Repositories
@@ -34,6 +35,21 @@ namespace GamingWithMe.Infrastructure.Repositories
                 .Where(m => m.SenderId == userId || m.ReceiverId == userId)
                 .OrderByDescending(m => m.SentAt)
                 .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Guid>> GetChatPartnerIdsAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var sentTo = await _ctx.Messages
+                .Where(m => m.SenderId == userId)
+                .Select(m => m.ReceiverId)
+                .ToListAsync(cancellationToken);
+
+            var receivedFrom = await _ctx.Messages
+                .Where(m => m.ReceiverId == userId)
+                .Select(m => m.SenderId)
+                .ToListAsync(cancellationToken);
+
+            return sentTo.Union(receivedFrom).Distinct().ToList();
         }
     }
 }
