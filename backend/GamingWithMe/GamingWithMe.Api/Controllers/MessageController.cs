@@ -31,11 +31,8 @@ namespace GamingWithMe.Api.Controllers
         [HttpGet("{recipientId}")]
         public async Task<IActionResult> GetConversationHistory(Guid recipientId)
         {
-            var senderId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var sender = (await _repo.ListAsync()).FirstOrDefault(x => x.UserId == senderId);
-
-
-
 
 
             var messages = await _context.Messages
