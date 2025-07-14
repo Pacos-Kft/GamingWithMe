@@ -68,6 +68,22 @@ namespace GamingWithMe.Api.Controllers
             return profiles == null ? NotFound() : Ok(profiles);
         }
 
+        [HttpGet("top-by-bookings")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<ProfileDto>>> GetTopByBookings()
+        {
+            var profiles = await _mediator.Send(new GetTopUsersByBookingsQuery());
+            return profiles == null ? NotFound() : Ok(profiles);
+        }
+
+        [HttpGet("random-with-stripe")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<ProfileDto>>> GetRandomWithStripe()
+        {
+            var profiles = await _mediator.Send(new GetRandomUsersWithStripeQuery());
+            return profiles == null ? NotFound() : Ok(profiles);
+        }
+
         [HttpPut("bio")]
         public async Task<IActionResult> UpdateBio([FromBody] UpdateBioDto dto)
         {
