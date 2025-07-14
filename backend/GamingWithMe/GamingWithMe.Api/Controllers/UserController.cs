@@ -1,15 +1,17 @@
 ﻿using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Dtos;
+using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
+using GamingWithMe.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Runtime.Intrinsics.X86;
 using System;
+using System.IO;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Claims;
 using static System.Reflection.Metadata.BlobBuilder;
-using GamingWithMe.Application.Dtos;
-using System.IO;
 
 namespace GamingWithMe.Api.Controllers
 {
@@ -21,8 +23,32 @@ namespace GamingWithMe.Api.Controllers
 
 
         private readonly IMediator _mediator;
+        private readonly IAsyncRepository<User> _userRepository;
 
-        public UserController(IMediator mediator) => _mediator = mediator;
+        public UserController(IMediator mediator, IAsyncRepository<User> userRepository)
+        {
+            _mediator = mediator;
+            _userRepository = userRepository;
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMe()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            return Ok(new { id = user.Id, username = user.Username });
+        }
 
         [HttpGet("profile/{username}")]
         [AllowAnonymous]
