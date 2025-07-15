@@ -161,15 +161,7 @@ namespace GamingWithMe.Api.Controllers
             return Ok(activity);
         }
 
-        [HttpPut("availability")]
-        public async Task<IActionResult> SetAvailableHours([FromBody] WeeklyHoursDto dto)
-        {
-            var userId = GetUserId();
-
-            var activity = await _mediator.Send(new SetAvailableHoursCommand(userId, dto));
-
-            return Ok(activity);
-        }
+        
 
         [HttpPost("daily-availability")]
         public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)
@@ -189,6 +181,16 @@ namespace GamingWithMe.Api.Controllers
             var availability = await _mediator.Send(new GetDailyAvailabilityQuery(userId, date));
 
             return Ok(availability);
+        }
+
+        [HttpDelete("daily-availability/{date}")]
+        public async Task<IActionResult> DeleteDailyAvailability(DateTime date)
+        {
+            var userId = GetUserId();
+
+            var result = await _mediator.Send(new DeleteDailyAvailabilityCommand(userId, date));
+
+            return result ? Ok(true) : BadRequest("Failed to delete availability");
         }
 
         [HttpPost("tags")]
