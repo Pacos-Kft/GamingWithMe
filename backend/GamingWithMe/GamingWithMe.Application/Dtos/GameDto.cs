@@ -1,11 +1,6 @@
-﻿using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record GameDto(string name, string description);
+    public record GameDto(Guid Id, string Name, string Description, string Slug, string? ThumbnailUrl);
 }

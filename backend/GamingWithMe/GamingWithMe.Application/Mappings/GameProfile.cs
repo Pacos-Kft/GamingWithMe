@@ -12,9 +12,10 @@ namespace GamingWithMe.Application.Mappings
     public sealed class GameProfile : Profile
     {
         public GameProfile() {
-            CreateMap<GameDto, Game>().ForMember(x => x.Slug, opt => opt.Ignore());
-
-            CreateMap<GameDto, Game>();
+            CreateMap<Game, GameDto>();
+            CreateMap<GameDto, Game>()
+                .ForMember(x => x.Slug, opt => opt.Ignore())
+                .ForMember(x => x.ThumbnailUrl, opt => opt.Ignore());
         }
     }
 }
