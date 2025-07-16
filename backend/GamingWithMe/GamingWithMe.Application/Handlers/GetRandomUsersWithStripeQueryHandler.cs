@@ -25,15 +25,16 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<List<ProfileDto>> Handle(GetRandomUsersWithStripeQuery request, CancellationToken cancellationToken)
         {
-            var users = await _userRepo.ListAsync(cancellationToken, u => u.Languages, u => u.Games, u => u.Tags);
+            var users = await _userRepo.ListAsync(cancellationToken, u => u.Languages, u => u.Games, u => u.Tags, u => u.DailyAvailability);
 
-            var usersWithStripe = users
-                .Where(u => !string.IsNullOrEmpty(u.StripeAccount))
+            var usersWithStripeAndAvailability = users
+                .Where(u => !string.IsNullOrEmpty(u.StripeAccount) &&
+                            u.DailyAvailability.Any(a => a.Date.Date == DateTime.UtcNow.Date))
                 .OrderBy(u => Guid.NewGuid())
                 .Take(8)
                 .ToList();
 
-            return _mapper.Map<List<ProfileDto>>(usersWithStripe);
+            return _mapper.Map<List<ProfileDto>>(usersWithStripeAndAvailability);
         }
     }
 }

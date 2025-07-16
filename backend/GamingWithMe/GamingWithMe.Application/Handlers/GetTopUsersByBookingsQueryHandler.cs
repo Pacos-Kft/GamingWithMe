@@ -27,6 +27,7 @@ namespace GamingWithMe.Application.Handlers
             var users = await _userRepo.ListAsync(cancellationToken, u => u.Bookings, u => u.Languages, u => u.Games, u => u.Tags);
 
             var topUsers = users
+                .Where(u => !string.IsNullOrEmpty(u.StripeAccount))
                 .OrderByDescending(u => u.Bookings.Count)
                 .Take(8)
                 .ToList();
