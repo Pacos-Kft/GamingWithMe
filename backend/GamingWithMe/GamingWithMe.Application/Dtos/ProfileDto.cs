@@ -13,7 +13,6 @@ namespace GamingWithMe.Application.Dtos
         List<string> games,
         List<string> tags,
         bool hasStripeAccount,        
-        List<BookingSummaryDto> bookings, 
         List<AvailabilitySlotDto> availability, 
         DateTime joined
 
@@ -21,7 +20,7 @@ namespace GamingWithMe.Application.Dtos
 
     )
     {
-        public ProfileDto() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, new List<string>(), new List<string>(), new List<string>(), false, new List<BookingSummaryDto>(), new List<AvailabilitySlotDto>(), default) { }
+        public ProfileDto() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, new List<string>(), new List<string>(), new List<string>(), false, new List<AvailabilitySlotDto>(), default) { }
     }
 
     

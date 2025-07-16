@@ -50,6 +50,22 @@ namespace GamingWithMe.Api.Controllers
             return Ok(new { id = user.Id, username = user.Username });
         }
 
+        [HttpGet("billing-history")]
+        public async Task<ActionResult<List<BillingRecordDto>>> GetBillingHistory()
+        {
+            var userId = GetUserId();
+            var history = await _mediator.Send(new GetBillingHistoryQuery(userId));
+            return Ok(history);
+        }
+
+        [HttpGet("upcoming-bookings")]
+        public async Task<ActionResult<List<UpcomingBookingDto>>> GetUpcomingBookings()
+        {
+            var userId = GetUserId();
+            var bookings = await _mediator.Send(new GetUpcomingBookingsQuery(userId));
+            return Ok(bookings);
+        }
+
         [HttpGet("profile/{username}")]
         [AllowAnonymous]
         public async Task<ActionResult<ProfileDto>> GetProfile(string username)

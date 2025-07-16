@@ -23,11 +23,6 @@ namespace GamingWithMe.Application.Mappings
                     opt => opt.MapFrom(src => src.Tags.Select(t => t.Tag.Name).ToList()))
                 .ForMember(d => d.hasStripeAccount, 
                     opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.StripeAccount)))
-                .ForMember(d => d.bookings, 
-                    opt => opt.MapFrom(src => src.Bookings.Select(b => new BookingSummaryDto(
-                        b.Id, b.StartTime, b.Duration, 
-                        b.Customer.Username ?? "Unknown"
-                    )).ToList()))
                 .ForMember(d => d.availability, 
                     opt => opt.MapFrom(src => src.DailyAvailability.Select(a => new AvailabilitySlotDto(
                         a.Id, a.Date, a.StartTime.ToString(@"hh\:mm"), 

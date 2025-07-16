@@ -3,6 +3,7 @@ using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -30,11 +31,13 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<GameEasterEggDto>> CreateEasterEgg(Guid gameId, [FromBody] CreateGameEasterEggCommand command)
+        public async Task<ActionResult<GameEasterEggDto>> CreateEasterEgg(Guid gameId, [FromForm] CreateGameEasterEggCommand command)
         {
-            if (gameId != command.GameId)
+            command.GameId = gameId;
+
+            if (command.ImageFile == null || command.ImageFile.Length == 0)
             {
-                return BadRequest("GameId in URL must match GameId in request body");
+                return BadRequest("Image file is required.");
             }
 
             try
