@@ -31,14 +31,14 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<GameEasterEggDto>> CreateEasterEgg(Guid gameId, [FromForm] string description, [FromForm] IFormFile imageFile)
+        public async Task<ActionResult<GameEasterEggDto>> CreateEasterEgg(Guid gameId, [FromForm] CreateGameEasterEggCommand command)
         {
-            if (imageFile == null || imageFile.Length == 0)
+            command.GameId = gameId;
+
+            if (command.ImageFile == null || command.ImageFile.Length == 0)
             {
                 return BadRequest("Image file is required.");
             }
-
-            var command = new CreateGameEasterEggCommand(gameId, description, imageFile);
 
             try
             {
