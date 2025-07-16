@@ -109,6 +109,15 @@ namespace GamingWithMe.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            builder.Entity<Discount>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(p => p.PercentOff).HasPrecision(18, 2);
+                e.HasOne(x => x.User)
+                    .WithMany(u => u.Discounts)
+                    .HasForeignKey(x => x.UserId);
+            });
+
             builder.Entity<Message>(m =>
             {
                 m.HasKey(x => x.Id);
