@@ -16,6 +16,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace GamingWithMe.Api.Controllers
 {
@@ -148,81 +149,7 @@ namespace GamingWithMe.Api.Controllers
             return BadRequest("Could not confirm email.");
         }
 
-        [HttpGet("google-login")]
-        public IActionResult GoogleLogin(string returnUrl = "/")
-        {
-            var redirectUrl = Url.Action("GoogleResponse", "account", new { ReturnUrl = returnUrl });
-            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
-            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-        }
-
-        [HttpGet("google-response")]
-        public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
-        {
-            var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null)
-            {
-                return BadRequest("Error loading external login information.");
-            }
-
-            // Sign in the user with this external login provider if the user already has a login.
-            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
-            if (signInResult.Succeeded)
-            {
-                // User has logged in with Google before.
-                return Redirect("https://localhost:5173"); // Redirect to your frontend app
-            }
-            if (signInResult.IsLockedOut)
-            {
-                return Forbid();
-            }
-            else
-            {
-                // If the user does not have an account, or has an account but is not linked, handle it here.
-                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-                if (email == null)
-                {
-                    return BadRequest("Email claim not received from Google.");
-                }
-
-                var user = await _userManager.FindByEmailAsync(email);
-                if (user == null)
-                {
-                    // Create a new user since they don't have an account yet.
-                    var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
-                    var googleId = info.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                    // Use email for the username to ensure it is unique.
-                    var dto = new RegisterDto(email, null, email, googleId);
-
-                    try
-                    {
-                        var userId = await _mediator.Send(new RegisterProfileCommand(dto));
-                        user = await _userManager.FindByIdAsync(userId);
-                        if (user == null)
-                        {
-                            return StatusCode(500, "Could not create or find user after registration.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        return BadRequest($"Error creating user: {ex.Message}");
-                    }
-                }
-
-                // Link the new or existing account to the Google login.
-                var addLoginResult = await _userManager.AddLoginAsync(user, info);
-                if (!addLoginResult.Succeeded)
-                {
-                    return StatusCode(500, $"Could not link Google account. Errors: {string.Join(", ", addLoginResult.Errors.Select(e => e.Description))}");
-                }
-
-                // Sign in the user with the application cookie.
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
-                return Redirect("https://localhost:5173"); // Redirect to your frontend app
-            }   
-        }
+        
 
 
     }
