@@ -5,11 +5,14 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
@@ -22,13 +25,15 @@ namespace GamingWithMe.Api.Controllers
     {
         private readonly IMediator _mediator;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IEmailService _emailService;
 
-        public AccountController(IMediator mediator, UserManager<IdentityUser> userManager, IEmailService emailService)
+        public AccountController(IMediator mediator, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IEmailService emailService)
         {
             _mediator = mediator;
             _userManager = userManager;
-            _emailService = emailService;
+            _signInManager = signInManager;
+            _emailService = emailService;   
         }
 
         [HttpPost("register")]
@@ -43,6 +48,35 @@ namespace GamingWithMe.Api.Controllers
         {
             await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
             return NoContent();
+        }
+
+        [HttpDelete("delete")]
+        [Authorize]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var command = new DeleteAccountCommand(userId);
+                var result = await _mediator.Send(command);
+
+                if (result)
+                {
+                    await _signInManager.SignOutAsync();
+                    return Ok("Account deleted successfully.");
+                }
+
+                return BadRequest("Failed to delete account.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 
@@ -69,7 +103,7 @@ namespace GamingWithMe.Api.Controllers
             };
 
             // IMPORTANT: Replace 1234567 with your actual password reset template ID
-            await _emailService.SendEmailAsync(user.Email, "Reset Your Password", 1234567, emailVariables);
+            //TODO: await _emailService.SendEmailAsync(user.Email, "Reset Your Password", 1234567, emailVariables);
 
             return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
         }
@@ -125,37 +159,69 @@ namespace GamingWithMe.Api.Controllers
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
         {
-            var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-
-            if (!result.Succeeded || result.Principal == null)
-                return BadRequest("Google authentication failed");
-
-            // Extract info from claims
-            var claims = result.Principal.Claims.ToList();
-            var googleId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-
-            // Save or find user in DB
-            //var user = await _mediator.Send(new GoogleLoginCommand
-            //{
-            //    GoogleId = googleId,
-            //    Email = email,
-            //    FullName = fullName
-            //});
-
-            var dto = new RegisterDto(email, null,fullName, googleId);
-
-
-            var id = await _mediator.Send(new RegisterProfileCommand(dto));
-
-            // Sign in user (optional if you use tokens)
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal);
-
-            return Ok(new
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
             {
-                message = "Google login successful"
-            });
+                return BadRequest("Error loading external login information.");
+            }
+
+            // Sign in the user with this external login provider if the user already has a login.
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            if (signInResult.Succeeded)
+            {
+                // User has logged in with Google before.
+                return Redirect("https://localhost:5173"); // Redirect to your frontend app
+            }
+            if (signInResult.IsLockedOut)
+            {
+                return Forbid();
+            }
+            else
+            {
+                // If the user does not have an account, or has an account but is not linked, handle it here.
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                if (email == null)
+                {
+                    return BadRequest("Email claim not received from Google.");
+                }
+
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    // Create a new user since they don't have an account yet.
+                    var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
+                    var googleId = info.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    // Use email for the username to ensure it is unique.
+                    var dto = new RegisterDto(email, null, email, googleId);
+
+                    try
+                    {
+                        var userId = await _mediator.Send(new RegisterProfileCommand(dto));
+                        user = await _userManager.FindByIdAsync(userId);
+                        if (user == null)
+                        {
+                            return StatusCode(500, "Could not create or find user after registration.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest($"Error creating user: {ex.Message}");
+                    }
+                }
+
+                // Link the new or existing account to the Google login.
+                var addLoginResult = await _userManager.AddLoginAsync(user, info);
+                if (!addLoginResult.Succeeded)
+                {
+                    return StatusCode(500, $"Could not link Google account. Errors: {string.Join(", ", addLoginResult.Errors.Select(e => e.Description))}");
+                }
+
+                // Sign in the user with the application cookie.
+                await _signInManager.SignInAsync(user, isPersistent: false);
+
+                return Redirect("https://localhost:5173"); // Redirect to your frontend app
+            }   
         }
 
 
