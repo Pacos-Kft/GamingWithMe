@@ -220,6 +220,12 @@ namespace GamingWithMe.Api.Controllers
                 if (booking == null)
                     return NotFound("Booking not found");
 
+                // Check if the booking can be canceled
+                if ((booking.StartTime - DateTime.UtcNow).TotalHours <= 1)
+                {
+                    return BadRequest("Booking cannot be canceled within 1 hour of the appointment.");
+                }
+
                 // 2. Check authorization (only the user who booked or the mentor can refund)
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 

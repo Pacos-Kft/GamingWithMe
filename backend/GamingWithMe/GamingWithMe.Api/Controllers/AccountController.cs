@@ -35,8 +35,16 @@ namespace GamingWithMe.Api.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken cancellationToken)
         {
             var id = await _mediator.Send(new RegisterProfileCommand(dto), cancellationToken);
-            return Ok(id);
+            return Ok("Account created");
         }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+            return NoContent();
+        }
+
 
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)

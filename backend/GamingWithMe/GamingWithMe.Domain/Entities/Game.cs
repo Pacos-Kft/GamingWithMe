@@ -13,6 +13,7 @@ namespace GamingWithMe.Domain.Entities
         public string Name { get; set; }
         public string Description { get; set; }
         public string Slug { get; set; }
+        public string? ThumbnailUrl { get; set; }
         public ICollection<UserGame> Players { get; set; }
         public ICollection<GameNews> News { get; set; }
         public ICollection<GameEvent> Events { get; set; }
