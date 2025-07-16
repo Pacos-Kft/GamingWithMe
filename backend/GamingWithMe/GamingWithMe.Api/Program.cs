@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Stripe;
 using Microsoft.Extensions.DependencyInjection;
+using GamingWithMe.Api.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+    options.Secure = CookieSecurePolicy.Always;
+});
+
 builder.Services.ConfigureApplicationCookie(opt =>
 {
     opt.Cookie.Name = "gamingwithme.auth";
@@ -42,6 +49,14 @@ builder.Services.ConfigureApplicationCookie(opt =>
     opt.Cookie.SameSite = SameSiteMode.None;
     opt.SlidingExpiration = true;
 });
+
+// Explicitly configure the external cookie
+builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ExternalScheme, options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
 
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped<IGameRepository, GameRepository>();
@@ -116,14 +131,10 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer"
     });
 
+    options.OperationFilter<FileUploadOperationFilter>();
 });
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie()
+builder.Services.AddAuthentication()
 .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
 {
     options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
@@ -141,19 +152,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapIdentityApi<IdentityUser>()
-    .RequireCors("AllowFrontend");
-
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+app.UseCookiePolicy();
 
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.MapIdentityApi<IdentityUser>()
+    .RequireCors("AllowFrontend");
 app.MapHub<ChatHub>("/chatHub");
 
 using (var scope = app.Services.CreateScope())
