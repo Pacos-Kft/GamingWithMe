@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Stripe;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +26,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-            "https://localhost:5173"
+            "https://localhost:5173",
+            "https://localhost:7091"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -116,18 +118,17 @@ builder.Services.AddSwaggerGen(options =>
 
 });
 
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-//})
-//.AddCookie();
-//.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-//{
-//    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-//    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-//});
-
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie()
+.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+});
 
 
 
@@ -157,15 +158,47 @@ app.MapHub<ChatHub>("/chatHub");
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var services = scope.ServiceProvider;
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+    var configuration = services.GetRequiredService<IConfiguration>();
+    var userRepo = services.GetRequiredService<IAsyncRepository<User>>();
 
+    // Seed roles
     var roles = new[] { "Admin", "Regular" };
-
-    foreach (var item in roles)
+    foreach (var roleName in roles)
     {
-        if(!await roleManager.RoleExistsAsync(item))
+        if (!await roleManager.RoleExistsAsync(roleName))
         {
-            await roleManager.CreateAsync(new IdentityRole(item));
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+
+    // Seed Admin User
+    var adminEmail = configuration["AdminUser:Email"];
+    var adminUsername = configuration["AdminUser:Username"];
+    var adminPassword = configuration["AdminUser:Password"];
+
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminUsername) && !string.IsNullOrEmpty(adminPassword))
+    {
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null)
+        {
+            adminUser = new IdentityUser { UserName = adminUsername, Email = adminEmail, EmailConfirmed = true };
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+
+            if (result.Succeeded)
+            {
+                // Create the corresponding custom User entity
+                var customUser = new User(adminUser.Id, adminUsername);
+                await userRepo.AddAsync(customUser);
+            }
+        }
+
+        // Assign the Admin role if the user exists and is not already an admin
+        if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
         }
     }
 }
