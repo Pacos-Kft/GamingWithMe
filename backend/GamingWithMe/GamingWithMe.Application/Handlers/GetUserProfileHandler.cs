@@ -42,29 +42,12 @@ namespace GamingWithMe.Application.Handlers
                 u => u.Games,
                 u => u.Tags,
                 u => u.DailyAvailability,
-                u => u.Products,
-                u => u.Bookings
+                u => u.Products
                 )).FirstOrDefault(x => x.Username == request.username);
 
             if (user == null)   
             {
                 return null;
-            }
-
-            // Manually load customers for bookings to avoid EF Core Include issue
-            if (user.Bookings.Any())
-            {
-                var customerIds = user.Bookings.Select(b => b.CustomerId).Distinct();
-                var customers = (await _userRepo.ListAsync(cancellationToken)).Where(u => customerIds.Contains(u.Id)).ToList();
-                var customerDict = customers.ToDictionary(c => c.Id);
-
-                foreach (var booking in user.Bookings)
-                {
-                    if (customerDict.TryGetValue(booking.CustomerId, out var customer))
-                    {
-                        booking.Customer = customer;
-                    }
-                }
             }
 
 
