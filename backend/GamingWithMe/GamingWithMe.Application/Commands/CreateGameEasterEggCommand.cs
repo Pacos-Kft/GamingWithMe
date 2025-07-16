@@ -11,6 +11,8 @@ namespace GamingWithMe.Application.Commands
         public string Description { get; set; }
         public IFormFile ImageFile { get; set; }
 
+        public CreateGameEasterEggCommand() { }
+
         public CreateGameEasterEggCommand(Guid gameId, string description, IFormFile imageFile)
         {
             GameId = gameId;
