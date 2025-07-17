@@ -4,6 +4,7 @@ using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
 using GamingWithMe.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -177,7 +178,24 @@ namespace GamingWithMe.Api.Controllers
             return Ok(activity);
         }
 
-        
+        [HttpGet("status")]
+        public async Task<IActionResult> GetAuthStatus()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Ok(new { authenticated = false });
+            }
+
+            var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
+            
+            return Ok(new { 
+                authenticated = true, 
+                userId = userId,
+                username = user?.Username,
+                claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+            });
+        }
 
         [HttpPost("daily-availability")]
         public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)
