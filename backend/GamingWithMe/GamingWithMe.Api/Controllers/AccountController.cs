@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -149,8 +150,81 @@ namespace GamingWithMe.Api.Controllers
             return BadRequest("Could not confirm email.");
         }
 
-        
+        [HttpGet("login/google")]
+        public IActionResult GoogleLogin([FromQuery] string returnUrl = "/")
+        {
+            var redirectUrl = Url.Action("GoogleResponse", "Account", new { ReturnUrl = returnUrl });
+            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
 
+        [HttpGet("login/google/callback")]
+        public async Task<IActionResult> GoogleResponse([FromQuery] string returnUrl)
+        {
+            // Use the external scheme to get the authentication result
+            var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+            
+            if (!authenticateResult.Succeeded)
+            {
+                return BadRequest("Google authentication failed.");
+            }
+
+            var claims = authenticateResult.Principal.Claims;
+            var googleId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Required claims missing from Google authentication.");
+            }
+
+            try
+            {
+                var command = new GoogleLoginCommand
+                {
+                    GoogleId = googleId,
+                    Email = email,
+                    FullName = fullName ?? email
+                };
+
+                var userDto = await _mediator.Send(command);
+
+                if (userDto == null)
+                {
+                    return BadRequest("Failed to process Google login.");
+                }
+
+                // Sign in the user with ASP.NET Identity
+                var identityUser = await _userManager.FindByEmailAsync(email);
+                if (identityUser != null)
+                {
+                    await _signInManager.SignInAsync(identityUser, isPersistent: false);
+                }
+
+                return Redirect("https://localhost:5173");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Google login failed: {ex.Message}");
+            }
+        }
+
+        [HttpGet("test-auth")]
+        [Authorize]
+        public IActionResult TestAuth()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            
+            return Ok(new { 
+                userId = userId,
+                email = email,
+                isAuthenticated = User.Identity.IsAuthenticated,
+                authenticationType = User.Identity.AuthenticationType,
+                claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+            });
+        }
 
     }
 

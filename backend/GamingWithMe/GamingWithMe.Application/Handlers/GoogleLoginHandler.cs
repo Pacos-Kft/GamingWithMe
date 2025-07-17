@@ -3,6 +3,7 @@ using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,41 +15,104 @@ namespace GamingWithMe.Application.Handlers
     public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, UserDto>
     {
         private readonly IAsyncRepository<User> _userRepo;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly IMediator _mediator;
 
-        public GoogleLoginHandler(IAsyncRepository<User> userRepo)
+        public GoogleLoginHandler(IAsyncRepository<User> userRepo, UserManager<IdentityUser> userManager, IMediator mediator)
         {
             _userRepo = userRepo;
+            _userManager = userManager;
+            _mediator = mediator;
         }
 
         public async Task<UserDto> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
         {
-            //var user = (await _userRepo.ListAsync(cancellationToken))
-            //    .FirstOrDefault(u => u.GoogleId == request.GoogleId || u.Email == request.Email);
+            // First, check if an IdentityUser with this email exists
+            var identityUser = await _userManager.FindByEmailAsync(request.Email);
+            
+            if (identityUser != null)
+            {
+                // Find the corresponding User entity - fixed the ListAsync call
+                var existingUser = (await _userRepo.ListAsync(cancellationToken))
+                    .FirstOrDefault(u => u.UserId == identityUser.Id);
 
-            //if (user == null)
-            //{
-            //    user = new User
-            //    {
-            //        Id = Guid.NewGuid(),
-            //        Username = request.Email,
-            //        Email = request.Email,
-            //        GoogleId = request.GoogleId,
-            //        FullName = request.FullName,
-            //        CreatedAt = DateTime.UtcNow
-            //    };
+                if (existingUser != null)
+                {
+                    // Update GoogleId if it's not set
+                    if (string.IsNullOrEmpty(existingUser.GoogleId) && !string.IsNullOrEmpty(request.GoogleId))
+                    {
+                        existingUser.GoogleId = request.GoogleId;
+                        await _userRepo.Update(existingUser);
+                    }
 
-            //    await _userRepo.AddAsync(user, cancellationToken);
-            //}
+                    return new UserDto(identityUser.Email, existingUser.GoogleId, request.FullName);
+                }
+            }
 
-            //return new UserDto
-            //{
-            //    Id = user.Id,
-            //    Email = user.Email,
-            //    FullName = user.FullName
-            //};
+            // Create new user if doesn't exist
+            var username = GenerateUsernameFromEmail(request.Email);
+            
+            // Ensure username is unique
+            var existingUsernames = (await _userRepo.ListAsync(cancellationToken))
+                .Select(u => u.Username)
+                .ToList();
+            
+            username = EnsureUniqueUsername(username, existingUsernames);
 
-            return null;
+            var registerDto = new RegisterDto(
+                email: request.Email,
+                password: null, // No password for Google login
+                username: username,
+                googleId: request.GoogleId
+            );
+
+            try
+            {
+                var userId = await _mediator.Send(new RegisterProfileCommand(registerDto), cancellationToken);
+                
+                // Update the created user with GoogleId
+                var newUser = (await _userRepo.ListAsync(cancellationToken))
+                    .FirstOrDefault(u => u.UserId == userId);
+                
+                if (newUser != null)
+                {
+                    newUser.GoogleId = request.GoogleId;
+                    await _userRepo.Update(newUser);
+                }
+
+                return new UserDto(request.Email, request.GoogleId, request.FullName);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to create user account: {ex.Message}", ex);
+            }
+        }
+
+        private string GenerateUsernameFromEmail(string email)
+        {
+            var username = email.Split('@')[0];
+            // Remove any characters that aren't alphanumeric or underscore
+            username = System.Text.RegularExpressions.Regex.Replace(username, @"[^a-zA-Z0-9_]", "");
+            return username;
+        }
+
+        private string EnsureUniqueUsername(string baseUsername, List<string> existingUsernames)
+        {
+            if (!existingUsernames.Contains(baseUsername))
+            {
+                return baseUsername;
+            }
+
+            int counter = 1;
+            string uniqueUsername;
+            do
+            {
+                uniqueUsername = $"{baseUsername}{counter}";
+                counter++;
+            }
+            while (existingUsernames.Contains(uniqueUsername));
+
+            return uniqueUsername;
         }
     }
-
 }

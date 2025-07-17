@@ -36,44 +36,75 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure cookie policy for external authentication
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.None;
     options.Secure = CookieSecurePolicy.Always;
 });
 
+builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
+builder.Services.AddScoped<IGameRepository, GameRepository>();
+
+builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"),
+            x => x.MigrationsAssembly("GamingWithMe.Infrastructure")));
+
+builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Configure Identity application cookie
 builder.Services.ConfigureApplicationCookie(opt =>
 {
     opt.Cookie.Name = "gamingwithme.auth";
     opt.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     opt.Cookie.SameSite = SameSiteMode.None;
     opt.SlidingExpiration = true;
+    opt.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+    opt.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
 });
 
-// Explicitly configure the external cookie
+// Configure external authentication cookie (for Google)
 builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ExternalScheme, options =>
 {
+    options.Cookie.Name = "gamingwithme.external";
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
 });
 
-
-builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
-builder.Services.AddScoped<IGameRepository, GameRepository>();
-
-
-builder.Services.AddDbContext<ApplicationDbContext>(opt =>
-                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"),
-            x => x.MigrationsAssembly("GamingWithMe.Infrastructure")));
-
-
-builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-
+// Add Google authentication with proper configuration
+builder.Services.AddAuthentication()
+    .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.SaveTokens = true;
+        
+        // Configure correlation cookie
+        options.CorrelationCookie.Name = "gamingwithme.correlation";
+        options.CorrelationCookie.SameSite = SameSiteMode.None;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.IsEssential = true;
+        
+        // Add callback path explicitly
+        options.CallbackPath = "/signin-google";
+    });
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingHandler>());
-
 
 builder.Services.Configure<StripeModel>(builder.Configuration.GetSection("Stripe"));
 builder.Services.AddScoped<CustomerService>();
@@ -83,7 +114,6 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<AccountLinkService>();
 builder.Services.AddScoped<PriceService>();
-
 
 builder.Services.AddAWSService<IAmazonS3>(builder.Configuration.GetAWSOptions());
 builder.Services.AddSingleton<IAmazonS3>(provider => {
@@ -98,7 +128,6 @@ builder.Services.AddSingleton<IAmazonS3>(provider => {
         Amazon.RegionEndpoint.GetBySystemName(region ?? "eu-central-1")
     );
 });
-
 
 builder.Services.AddSignalR();
 
@@ -133,15 +162,6 @@ builder.Services.AddSwaggerGen(options =>
 
     options.OperationFilter<FileUploadOperationFilter>();
 });
-
-builder.Services.AddAuthentication()
-.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-{
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-});
-
-
 
 var app = builder.Build();
 
