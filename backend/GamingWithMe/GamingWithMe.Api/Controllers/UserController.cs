@@ -7,8 +7,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Claims;
@@ -21,15 +23,15 @@ namespace GamingWithMe.Api.Controllers
     [Authorize]
     public class UserController : ControllerBase
     {
-
-
         private readonly IMediator _mediator;
         private readonly IAsyncRepository<User> _userRepository;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public UserController(IMediator mediator, IAsyncRepository<User> userRepository)
+        public UserController(IMediator mediator, IAsyncRepository<User> userRepository, UserManager<IdentityUser> userManager)
         {
             _mediator = mediator;
             _userRepository = userRepository;
+            _userManager = userManager;
         }
 
         [HttpGet("me")]
@@ -48,7 +50,11 @@ namespace GamingWithMe.Api.Controllers
                 return NotFound("User not found.");
             }
 
-            return Ok(new { id = user.Id, username = user.Username });
+            // Get the IdentityUser to check roles
+            var identityUser = await _userManager.FindByIdAsync(userId);
+            var isAdmin = identityUser != null && await _userManager.IsInRoleAsync(identityUser, "Admin");
+
+            return Ok(new { id = user.Id, username = user.Username, isAdmin = isAdmin });
         }
 
         [HttpGet("billing-history")]
@@ -107,6 +113,46 @@ namespace GamingWithMe.Api.Controllers
             var userId = GetUserId();
             var result = await _mediator.Send(new UpdateUserBioCommand(userId, dto.Bio));
             return result ? Ok() : NotFound("User not found.");
+        }
+
+        [HttpPut("username")]
+        public async Task<IActionResult> UpdateUsername([FromBody] UpdateUsernameDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Username))
+            {
+                return BadRequest("Username is required.");
+            }
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _mediator.Send(new UpdateUsernameCommand(userId, dto.Username));
+                return result ? Ok("Username updated successfully.") : BadRequest("Failed to update username.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.CurrentPassword) || string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                return BadRequest("Both current and new passwords are required.");
+            }
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _mediator.Send(new ChangePasswordCommand(userId, dto.CurrentPassword, dto.NewPassword));
+                return result ? Ok("Password changed successfully.") : BadRequest("Failed to change password.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("avatar")]
@@ -260,5 +306,25 @@ namespace GamingWithMe.Api.Controllers
     public class UpdateBioDto
     {
         public string Bio { get; set; }
+    }
+
+    public class UpdateUsernameDto
+    {
+        [Required]
+        [MinLength(3, ErrorMessage = "Username must be at least 3 characters long.")]
+        [MaxLength(50, ErrorMessage = "Username cannot be longer than 50 characters.")]
+        public string Username { get; set; }
+    }
+
+    public class ChangePasswordDto
+    {
+        [Required]
+        [DataType(DataType.Password)]
+        public string CurrentPassword { get; set; }
+
+        [Required]
+        [DataType(DataType.Password)]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
+        public string NewPassword { get; set; }
     }
 }
