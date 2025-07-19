@@ -15,18 +15,15 @@ namespace GamingWithMe.Application.Handlers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IAsyncRepository<User> _userRepository;
         private readonly IAsyncRepository<Booking> _bookingRepository;
-        private readonly IAsyncRepository<Message> _messageRepository;
 
         public DeleteAccountHandler(
             UserManager<IdentityUser> userManager,
             IAsyncRepository<User> userRepository,
-            IAsyncRepository<Booking> bookingRepository,
-            IAsyncRepository<Message> messageRepository)
+            IAsyncRepository<Booking> bookingRepository)
         {
             _userManager = userManager;
             _userRepository = userRepository;
             _bookingRepository = bookingRepository;
-            _messageRepository = messageRepository;
         }
 
         public async Task<bool> Handle(DeleteAccountCommand request, CancellationToken cancellationToken)
@@ -61,12 +58,7 @@ namespace GamingWithMe.Application.Handlers
                     await _bookingRepository.Delete(booking);
                 }
 
-                var messages = (await _messageRepository.ListAsync(cancellationToken))
-                    .Where(m => m.SenderId == customUser.Id || m.ReceiverId == customUser.Id);
-                foreach (var message in messages)
-                {
-                    await _messageRepository.Delete(message);
-                }
+                
 
                 await _userRepository.Delete(customUser);
             }
