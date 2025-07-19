@@ -7,11 +7,10 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record RegisterDto(
+    public record RegisterGoogleDto(
         [Required][EmailAddress] string email,
         [MinLength(6)] string password,
         [Required] string username,
-        string googleId,
-        string facebookId
+        string googleId
         );
 }

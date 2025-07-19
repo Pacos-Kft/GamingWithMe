@@ -28,7 +28,6 @@ namespace GamingWithMe.Infrastructure.Data
         public DbSet<GameEvent> GameEvents => Set<GameEvent>();
         public DbSet<GameEasterEgg> GameEasterEggs => Set<GameEasterEgg>();
         public DbSet<Discount> Discounts => Set<Discount>();
-        public DbSet<Message> Messages => Set<Message>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -118,20 +117,7 @@ namespace GamingWithMe.Infrastructure.Data
                     .HasForeignKey(x => x.UserId);
             });
 
-            builder.Entity<Message>(m =>
-            {
-                m.HasKey(x => x.Id);
-
-                m.HasOne(x => x.Sender)
-                    .WithMany(u => u.SentMessages)
-                    .HasForeignKey(x => x.SenderId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                m.HasOne(x => x.Receiver)
-                    .WithMany(u => u.ReceivedMessages)
-                    .HasForeignKey(x => x.ReceiverId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
+           
 
             builder.Entity<UserTag>(x =>
             {

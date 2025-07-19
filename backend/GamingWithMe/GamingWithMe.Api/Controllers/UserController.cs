@@ -214,34 +214,7 @@ namespace GamingWithMe.Api.Controllers
             return Ok(removed);
         }
 
-        [HttpPut("status/active")]
-        public async Task<ActionResult<bool>> SetIsActive()
-        {
-            var userId = GetUserId();
-            
-            var activity = await _mediator.Send(new SetUserActivityCommand(userId));
-
-            return Ok(activity);
-        }
-
-        [HttpGet("status")]
-        public async Task<IActionResult> GetAuthStatus()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-            {
-                return Ok(new { authenticated = false });
-            }
-
-            var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
-            
-            return Ok(new { 
-                authenticated = true, 
-                userId = userId,
-                username = user?.Username,
-                claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
-            });
-        }
+        
 
         [HttpPost("daily-availability")]
         public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)

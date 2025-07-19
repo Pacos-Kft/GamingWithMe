@@ -21,26 +21,18 @@ namespace GamingWithMe.Domain.Entities
         public string Bio { get; set; }
         public bool IsActive { get; set; }
 
-
         public string GoogleId { get; set; }
+        public string FacebookId { get; set; }
 
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public ICollection<Booking> Bookings { get; set; }
-        public ICollection<Message> SentMessages { get; set; }
-        public ICollection<Message> ReceivedMessages { get; set; }
         public ICollection<UserLanguage> Languages { get; set; }
         public ICollection<UserAvailability> DailyAvailability { get; set; }
         public ICollection<Product> Products { get; set; }
         public ICollection<UserGame> Games { get; set; }
         public ICollection<UserTag> Tags { get; set; }
         public ICollection<Discount> Discounts { get; set; }
-
-
-
-
-
-
 
         public User()
         {
@@ -57,9 +49,8 @@ namespace GamingWithMe.Domain.Entities
             Bookings = new List<Booking>();
             StripeAccount = string.Empty;
             StripeCustomer = string.Empty;
-            SentMessages = new List<Message>();
-            ReceivedMessages = new List<Message>();
             GoogleId = string.Empty;
+            FacebookId = string.Empty; 
             Bio = string.Empty;
             Languages = new List<UserLanguage>();
             Games = new List<UserGame>();

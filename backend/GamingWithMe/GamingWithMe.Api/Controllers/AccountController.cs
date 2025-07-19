@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -81,75 +82,6 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
-        {
-            var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
-            {
-                // Don't reveal that the user does not exist or is not confirmed
-                return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
-            }
-
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-            // IMPORTANT: Replace with your actual frontend URL that hosts the password reset page
-            var resetLink = $"http://localhost:7091/reset-password?email={Uri.EscapeDataString(user.Email)}&token={encodedToken}";
-
-            var emailVariables = new Dictionary<string, string>
-            {
-                { "reset_link", resetLink }
-                // Add other variables your password reset template might need
-            };
-
-            // IMPORTANT: Replace 1234567 with your actual password reset template ID
-            //TODO: await _emailService.SendEmailAsync(user.Email, "Reset Your Password", 1234567, emailVariables);
-
-            return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
-        }
-
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
-        {
-            var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user == null)
-            {
-                // Don't reveal that the user does not exist
-                return BadRequest("Error resetting password.");
-            }
-
-            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(dto.Token));
-            var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
-
-            if (result.Succeeded)
-            {
-                return Ok("Password has been reset successfully.");
-            }
-
-            return BadRequest("Error resetting password.");
-        }
-
-        [HttpGet("confirm-email")]
-        public async Task<IActionResult> ConfirmEmail(string userId, string token)
-        {
-            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(token))
-                return BadRequest("Invalid confirmation link.");
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-                return NotFound("User not found.");
-
-            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
-
-            if (result.Succeeded)
-                return Ok("Email confirmed successfully!");
-
-            return BadRequest("Could not confirm email.");
-        }
-
         [HttpGet("login/google")]
         public IActionResult GoogleLogin([FromQuery] string returnUrl = "/")
         {
@@ -210,22 +142,65 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        [HttpGet("test-auth")]
-        [Authorize]
-        public IActionResult TestAuth()
+        [HttpGet("login/facebook")]
+        public IActionResult FacebookLogin([FromQuery] string returnUrl = "/")
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            
-            return Ok(new { 
-                userId = userId,
-                email = email,
-                isAuthenticated = User.Identity.IsAuthenticated,
-                authenticationType = User.Identity.AuthenticationType,
-                claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
-            });
+            var redirectUrl = Url.Action("FacebookResponse", "Account", new { ReturnUrl = returnUrl });
+            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+            return Challenge(properties, FacebookDefaults.AuthenticationScheme);
         }
 
+        [HttpGet("login/facebook/callback")]
+        public async Task<IActionResult> FacebookResponse([FromQuery] string returnUrl)
+        {
+            // Use the external scheme to get the authentication result
+            var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+            
+            if (!authenticateResult.Succeeded)
+            {
+                return BadRequest("Facebook authentication failed.");
+            }
+
+            var claims = authenticateResult.Principal.Claims;
+            var facebookId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(facebookId) || string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Required claims missing from Facebook authentication.");
+            }
+
+            try
+            {
+                var command = new FacebookLoginCommand
+                {
+                    FacebookId = facebookId,
+                    Email = email,
+                    FullName = fullName ?? email
+                };
+
+                var userDto = await _mediator.Send(command);
+
+                if (userDto == null)
+                {
+                    return BadRequest("Failed to process Facebook login.");
+                }
+
+                // Sign in the user with ASP.NET Identity
+                var identityUser = await _userManager.FindByEmailAsync(email);
+                if (identityUser != null)
+                {
+                    await _signInManager.SignInAsync(identityUser, isPersistent: false);
+                }
+
+                return Redirect("https://localhost:5173");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Facebook login failed: {ex.Message}");
+            }
+        }
     }
 
     public class ForgotPasswordDto
@@ -248,5 +223,4 @@ namespace GamingWithMe.Api.Controllers
         [DataType(DataType.Password)]
         public string NewPassword { get; set; }
     }
-
 }

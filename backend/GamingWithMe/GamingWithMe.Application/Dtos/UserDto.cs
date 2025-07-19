@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-    public record UserDto(string email, string googleId, string fullname);
+    public record UserDto(string email, string googleId, string facebookId, string fullname);
 }

@@ -1,4 +1,4 @@
-﻿using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Commands;
 using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Domain.Entities;
@@ -12,20 +12,20 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Handlers
 {
-    public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, UserDto>
+    public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, UserDto>
     {
         private readonly IAsyncRepository<User> _userRepo;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IMediator _mediator;
 
-        public GoogleLoginHandler(IAsyncRepository<User> userRepo, UserManager<IdentityUser> userManager, IMediator mediator)
+        public FacebookLoginHandler(IAsyncRepository<User> userRepo, UserManager<IdentityUser> userManager, IMediator mediator)
         {
             _userRepo = userRepo;
             _userManager = userManager;
             _mediator = mediator;
         }
 
-        public async Task<UserDto> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
+        public async Task<UserDto> Handle(FacebookLoginCommand request, CancellationToken cancellationToken)
         {
             // First, check if an IdentityUser with this email exists
             var identityUser = await _userManager.FindByEmailAsync(request.Email);
@@ -38,10 +38,10 @@ namespace GamingWithMe.Application.Handlers
 
                 if (existingUser != null)
                 {
-                    // Update GoogleId if it's not set
-                    if (string.IsNullOrEmpty(existingUser.GoogleId) && !string.IsNullOrEmpty(request.GoogleId))
+                    // Update FacebookId if it's not set
+                    if (string.IsNullOrEmpty(existingUser.FacebookId) && !string.IsNullOrEmpty(request.FacebookId))
                     {
-                        existingUser.GoogleId = request.GoogleId;
+                        existingUser.FacebookId = request.FacebookId;
                         await _userRepo.Update(existingUser);
                     }
 
@@ -61,27 +61,27 @@ namespace GamingWithMe.Application.Handlers
 
             var registerDto = new RegisterDto(
                 email: request.Email,
-                password: null, // No password for Google login
+                password: null, // No password for Facebook login
                 username: username,
-                googleId: request.GoogleId,
-                facebookId: null
+                googleId: null,
+                facebookId: request.FacebookId
             );
 
             try
             {
                 var userId = await _mediator.Send(new RegisterProfileCommand(registerDto), cancellationToken);
                 
-                // Update the created user with GoogleId
+                // Update the created user with FacebookId
                 var newUser = (await _userRepo.ListAsync(cancellationToken))
                     .FirstOrDefault(u => u.UserId == userId);
                 
                 if (newUser != null)
                 {
-                    newUser.GoogleId = request.GoogleId;
+                    newUser.FacebookId = request.FacebookId;
                     await _userRepo.Update(newUser);
                 }
 
-                return new UserDto(request.Email, request.GoogleId, null, request.FullName);
+                return new UserDto(request.Email, null, request.FacebookId, request.FullName);
             }
             catch (Exception ex)
             {
