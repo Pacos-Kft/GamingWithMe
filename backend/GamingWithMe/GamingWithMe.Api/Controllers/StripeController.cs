@@ -72,9 +72,9 @@ namespace GamingWithMe.Api.Controllers
             _discountRepo = discountRepo;
         }
 
-        [HttpPost("pay/{mentorId}")]
+        [HttpPost("pay/{creatorId}")]
         [Authorize]
-        public async Task<IActionResult> Pay(Guid mentorId, [FromBody] PaymentWithCouponRequest request /*[FromBody] Guid appointmentId*/ /*[FromBody] BookingDetailsDto request*/)
+        public async Task<IActionResult> Pay(Guid creatorId, [FromBody] PaymentWithCouponRequest request /*[FromBody] Guid appointmentId*/ /*[FromBody] BookingDetailsDto request*/)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -83,10 +83,9 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            //var cmd = new BookingCommand(mentorId, userId,"", request);
-            var cmd = (mentorId, userId, request.AppointmentId);
+            var cmd = (creatorId, userId, request.AppointmentId);
 
-            var gamer = await _gamerRepo.GetByIdAsync(mentorId, default, x => x.DailyAvailability, q => q.Discounts);
+            var gamer = await _gamerRepo.GetByIdAsync(creatorId, default, x => x.DailyAvailability, q => q.Discounts);
 
             if (gamer == null)
             {
@@ -110,7 +109,7 @@ namespace GamingWithMe.Api.Controllers
 
             try
             {
-                var validationCommand = new ValidateBookingCommand(cmd.mentorId, cmd.userId, cmd.AppointmentId);
+                var validationCommand = new ValidateBookingCommand(cmd.creatorId, cmd.userId, cmd.AppointmentId);
                 await _mediator.Send(validationCommand);
 
                 StripeConfiguration.ApiKey = _model.SecretKey;
@@ -159,7 +158,7 @@ namespace GamingWithMe.Api.Controllers
                     Metadata = new Dictionary<string, string>
                     {
                         { "bookingDetails", JsonSerializer.Serialize(cmd) },
-                        { "mentorId", mentorId.ToString() },
+                        { "creatorId", creatorId.ToString() },
                         { "userId", userId }
                     }
                 };
@@ -304,52 +303,7 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest(e.Message);
             }
         }
-
-        [HttpPost("create-product")]
-        [Authorize]
-        public async Task<IActionResult> CreateProduct([FromBody] NewProductDto productDto)
-        {
-            StripeConfiguration.ApiKey = _model.SecretKey;
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (userId == null)
-            {
-                return BadRequest("User not found");
-            }
-
-            var product = await _mediator.Send(new CreateProductCommand(userId, productDto));
-
-            return Ok(product);
-        }
-
-        [HttpPost("create-customer")]
-        public async Task<dynamic> CreateCustomer([FromBody] StripeCustomer customer)
-        {
-            StripeConfiguration.ApiKey = _model.SecretKey;
-
-            var customerOptions = new CustomerCreateOptions
-            {
-                Email = customer.Email,
-                Name = customer.Name,
-            };
-
-            var _customer = await _customerService.CreateAsync(customerOptions);
-
-            return new { customer };
-        }
-
-        [HttpGet("get-all-products")]
-        public IActionResult GetAllProducts()
-        {
-            StripeConfiguration.ApiKey = _model.SecretKey;
-
-            var options = new ProductListOptions { Expand = new List<string> { "data.default_price" } };
-
-            var products = _product.List(options);
-
-            return Ok(products);
-        }
+        
 
         [HttpPost("create-connected-account")]
         [AllowAnonymous]
@@ -462,65 +416,7 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        [HttpPost("apply-coupon")]
-        public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponRequest request)
-        {
-            try
-            {
-                StripeConfiguration.ApiKey = _model.SecretKey;
-
-                // Validate the coupon first
-                var couponService = new CouponService();
-                var coupon = await couponService.GetAsync(request.CouponCode);
-
-                if (coupon == null)
-                {
-                    return BadRequest(new { Error = "Invalid coupon code" });
-                }
-
-                // Validate that the coupon is still valid
-                if (!coupon.Valid)
-                {
-                    return BadRequest(new { Error = "Coupon is expired or maximum redemptions reached" });
-                }
-
-                // Rest of the method remains unchanged
-                var priceService = new PriceService();
-                var price = await priceService.GetAsync(request.PriceId);
-
-                if (price == null)
-                {
-                    return BadRequest(new { Error = "Invalid price ID" });
-                }
-
-                // Calculate discounted price
-                var originalAmount = price.UnitAmount ?? 0;
-                var discountedAmount = originalAmount;
-
-                if (coupon.PercentOff.HasValue)
-                {
-                    discountedAmount = originalAmount - (originalAmount * (long)coupon.PercentOff.Value / 100);
-                }
-                else if (coupon.AmountOff.HasValue)
-                {
-                    discountedAmount = originalAmount - coupon.AmountOff.Value;
-                    if (discountedAmount < 0) discountedAmount = 0;
-                }
-
-                return Ok(new
-                {
-                    CouponCode = coupon.Id,
-                    OriginalPrice = originalAmount,
-                    DiscountedPrice = discountedAmount,
-                    Discount = originalAmount - discountedAmount,
-                    PercentOff = coupon.PercentOff
-                });
-            }
-            catch (StripeException ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
+        
 
     }
 }
