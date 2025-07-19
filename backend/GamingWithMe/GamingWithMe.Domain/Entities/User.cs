@@ -27,8 +27,6 @@ namespace GamingWithMe.Domain.Entities
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public ICollection<Booking> Bookings { get; set; }
-        public ICollection<Message> SentMessages { get; set; }
-        public ICollection<Message> ReceivedMessages { get; set; }
         public ICollection<UserLanguage> Languages { get; set; }
         public ICollection<UserAvailability> DailyAvailability { get; set; }
         public ICollection<Product> Products { get; set; }
@@ -57,8 +55,6 @@ namespace GamingWithMe.Domain.Entities
             Bookings = new List<Booking>();
             StripeAccount = string.Empty;
             StripeCustomer = string.Empty;
-            SentMessages = new List<Message>();
-            ReceivedMessages = new List<Message>();
             GoogleId = string.Empty;
             Bio = string.Empty;
             Languages = new List<UserLanguage>();
