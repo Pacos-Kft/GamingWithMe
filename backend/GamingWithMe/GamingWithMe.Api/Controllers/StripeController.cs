@@ -66,7 +66,7 @@ namespace GamingWithMe.Api.Controllers
             _product = product;
             _mediator = mediator;
             // It's recommended to store your webhook secret in appsettings.json or another secure configuration provider
-            _webhookSecret = "whsec_a502365718c2eabc23f204e03d5e5d26f9fc4bc595de1303ea802e992dd86bd3"; // Replace with your actual webhook signing secret
+            _webhookSecret = _model.WebhookSecret; // Replace with your actual webhook signing secret
             _priceService = priceService;
             _gamerRepo = gamerRepo;
             _discountRepo = discountRepo;
@@ -145,7 +145,7 @@ namespace GamingWithMe.Api.Controllers
                         }
                     },
                     Mode = "payment",
-                    SuccessUrl = "http://localhost:5173/success",
+                    SuccessUrl = "http://localhost:5173",
                     CancelUrl = "http://localhost:5173",
                     PaymentIntentData = new SessionPaymentIntentDataOptions
                     {
@@ -390,33 +390,48 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        [HttpGet("validate-coupon/{couponCode}")]
-        public async Task<IActionResult> ValidateCoupon(string couponCode)
+
+        [HttpGet("validate-coupon-by-name/{couponName}")]
+        public async Task<IActionResult> ValidateCouponByName(string couponName)
         {
             try
             {
-                StripeConfiguration.ApiKey = _model.SecretKey;
+                // First check our local database for a discount with this name
+                var localDiscount = (await _discountRepo.ListAsync()).FirstOrDefault(x => x.Name.ToLower() == couponName.ToLower());
+                
+                if (localDiscount == null)
+                {
+                    return Ok(new { Valid = false, Message = "Coupon not found" });
+                }
 
+                // Then validate with Stripe using the StripeId
+                StripeConfiguration.ApiKey = _model.SecretKey;
                 var couponService = new CouponService();
-                var coupon = await couponService.GetAsync(couponCode);
+                var coupon = await couponService.GetAsync(localDiscount.StripeId);
 
                 bool isValid = coupon != null && coupon.Valid;
 
-                return Ok(new
+                if (isValid)
                 {
-                    Valid = isValid,
-                    PercentOff = coupon?.PercentOff,
-                    Name = coupon?.Name,
-                    ExpiresAt = coupon?.RedeemBy
-                });
+                    return Ok(new
+                    {
+                        Valid = true,
+                        CouponId = coupon.Id,
+                        Name = coupon.Name,
+                        PercentOff = coupon.PercentOff,
+                        ExpiresAt = coupon.RedeemBy
+                    });
+                }
+                else
+                {
+                    return Ok(new { Valid = false, Message = "Coupon is no longer valid" });
+                }
             }
             catch (StripeException)
             {
-                return Ok(new { Valid = false });
+                return Ok(new { Valid = false, Message = "Error validating coupon" });
             }
         }
-
-        
 
     }
 }
