@@ -170,51 +170,47 @@ namespace GamingWithMe.Api.Controllers
         }
 
 
-        [HttpPost("languages")]
-        public async Task<IActionResult> AddLanguage([FromBody] Guid languageId)
+        [HttpPost("languages/{languageName}")]
+        public async Task<IActionResult> AddLanguage(string languageName)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = GetUserId();
 
-            if (userId == null) { 
-                return NotFound();
-            }
-
-            var added = await _mediator.Send(new AddLanguageToUserCommand(userId, languageId));
+            var added = await _mediator.Send(new AddLanguageToUserByNameCommand(userId, languageName));
 
             return Ok(added);
         }
 
-        [HttpDelete("languages")]
-        public async Task<IActionResult> DeleteLanguage([FromBody] string language)
+        [HttpDelete("languages/{languageName}")]
+        public async Task<IActionResult> DeleteLanguage(string languageName)
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteLanguageFromUserCommand(userId, language));
+            var removed = await _mediator.Send(new DeleteLanguageFromUserCommand(userId, languageName));
 
             return Ok(removed);
         }
 
-        [HttpPost("games")]
-        public async Task<IActionResult> AddGame([FromBody] Guid gameId)
+        [HttpPost("games/{gameName}")]
+        public async Task<IActionResult> AddGame(string gameName)
         {
             var userId = GetUserId();
 
-            var added = await _mediator.Send(new AddGameToUserCommand(userId, gameId));
+            var added = await _mediator.Send(new AddGameToUserByNameCommand(userId, gameName));
 
             return Ok(added);
         }
 
-        [HttpDelete("games")]
-        public async Task<IActionResult> DeleteGame([FromBody] Guid gameId)
+        [HttpDelete("games/{gameName}")]
+        public async Task<IActionResult> DeleteGame(string gameName)
         {
             var userId = GetUserId();
 
-            var removed = await _mediator.Send(new DeleteGameFromUserCommand(userId, gameId));
+            var removed = await _mediator.Send(new DeleteGameFromUserByNameCommand(userId, gameName));
 
             return Ok(removed);
         }
 
-        
+
 
         [HttpPost("daily-availability")]
         public async Task<IActionResult> SetDailyAvailability([FromBody] DailyAvailabilityDto availability)
@@ -246,19 +242,19 @@ namespace GamingWithMe.Api.Controllers
             return result ? Ok(true) : BadRequest("Failed to delete availability");
         }
 
-        [HttpPost("tags")]
-        public async Task<IActionResult> AddTag([FromBody] Guid tagId)
+        [HttpPost("tags/{tagName}")]
+        public async Task<IActionResult> AddTag(string tagName)
         {
             var userId = GetUserId();
-            var added = await _mediator.Send(new AddUserTagCommand(userId, tagId));
+            var added = await _mediator.Send(new AddUserTagByNameCommand(userId, tagName));
             return added ? Ok(true) : BadRequest("Failed to add tag");
         }
 
-        [HttpDelete("tags/{tagId}")]
-        public async Task<IActionResult> RemoveTag(Guid tagId)
+        [HttpDelete("tags/{tagName}")]
+        public async Task<IActionResult> RemoveTag(string tagName)
         {
             var userId = GetUserId();
-            var removed = await _mediator.Send(new RemoveUserTagCommand(userId, tagId));
+            var removed = await _mediator.Send(new RemoveUserTagByNameCommand(userId, tagName));
             return removed ? Ok(true) : BadRequest("Failed to remove tag");
         }
 
