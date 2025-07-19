@@ -1,5 +1,4 @@
 ﻿using Amazon.S3;
-using GamingWithMe.Api.Hubs;
 using GamingWithMe.Application.DependencyInjection;
 using GamingWithMe.Application.Handlers;
 using GamingWithMe.Application.Interfaces;
@@ -102,6 +101,23 @@ builder.Services.AddAuthentication()
         
         // Add callback path explicitly
         options.CallbackPath = "/signin-google";
+    })
+    .AddFacebook(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Facebook:ClientId"];
+        options.ClientSecret = builder.Configuration["Authentication:Facebook:ClientSecret"];
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.SaveTokens = true;
+        
+        // Configure correlation cookie
+        options.CorrelationCookie.Name = "gamingwithme.facebook.correlation";
+        options.CorrelationCookie.SameSite = SameSiteMode.None;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.IsEssential = true;
+        
+        // Add callback path explicitly
+        options.CallbackPath = "/signin-facebook";
     });
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingHandler>());
@@ -131,7 +147,6 @@ builder.Services.AddSingleton<IAmazonS3>(provider => {
 
 builder.Services.AddSignalR();
 
-builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
 // AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
@@ -185,7 +200,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapIdentityApi<IdentityUser>()
     .RequireCors("AllowFrontend");
-app.MapHub<ChatHub>("/chatHub");
+//app.MapHub<ChatHub>("/chatHub");
 
 using (var scope = app.Services.CreateScope())
 {

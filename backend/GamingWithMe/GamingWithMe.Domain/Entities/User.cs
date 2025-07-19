@@ -21,8 +21,8 @@ namespace GamingWithMe.Domain.Entities
         public string Bio { get; set; }
         public bool IsActive { get; set; }
 
-
         public string GoogleId { get; set; }
+        public string FacebookId { get; set; }
 
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -33,12 +33,6 @@ namespace GamingWithMe.Domain.Entities
         public ICollection<UserGame> Games { get; set; }
         public ICollection<UserTag> Tags { get; set; }
         public ICollection<Discount> Discounts { get; set; }
-
-
-
-
-
-
 
         public User()
         {
@@ -56,6 +50,7 @@ namespace GamingWithMe.Domain.Entities
             StripeAccount = string.Empty;
             StripeCustomer = string.Empty;
             GoogleId = string.Empty;
+            FacebookId = string.Empty; 
             Bio = string.Empty;
             Languages = new List<UserLanguage>();
             Games = new List<UserGame>();

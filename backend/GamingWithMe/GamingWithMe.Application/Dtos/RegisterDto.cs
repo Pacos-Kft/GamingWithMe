@@ -1,5 +1,4 @@
-﻿using GamingWithMe.Domain.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -8,12 +7,11 @@ using System.Threading.Tasks;
 
 namespace GamingWithMe.Application.Dtos
 {
-
     public record RegisterDto(
         [Required][EmailAddress] string email,
         [MinLength(6)] string password,
         [Required] string username,
-        string googleId
+        string googleId,
+        string facebookId
         );
-    
 }
