@@ -11,8 +11,7 @@ namespace GamingWithMe.Domain.Entities
         public Guid PlayerId { get; set; }
         public virtual User Player { get; set; }
 
-        public Guid GameId { get; set; }
-        public virtual Game Game { get; set; }
+        public string Gamename { get; set; }
 
         public UserGame()
         {
