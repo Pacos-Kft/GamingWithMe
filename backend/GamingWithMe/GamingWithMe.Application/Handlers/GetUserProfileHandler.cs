@@ -47,15 +47,12 @@ namespace GamingWithMe.Application.Handlers
                 return null;
             }
 
-            // Pre-load all related entities for efficient lookups
             var allLanguages = await _languageRepo.ListAsync(cancellationToken);
             var allTags = await _tagRepo.ListAsync(cancellationToken);
 
-            // Create dictionaries for fast lookups
             var languagesDict = allLanguages.ToDictionary(l => l.Id);
             var tagsDict = allTags.ToDictionary(t => t.Id);
 
-            // Link related entities
             foreach (var ul in user.Languages)
             {
                 if (languagesDict.TryGetValue(ul.LanguageId, out var lang))
