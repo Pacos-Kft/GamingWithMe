@@ -33,10 +33,8 @@ namespace GamingWithMe.Application.Handlers
                 throw new ApplicationException("User not found.");
             }
 
-            // Store the old avatar URL to delete it later
             var oldAvatarUrl = user.AvatarUrl;
 
-            // Upload the new file
             var file = request.AvatarFile;
             var key = $"avatars/{user.Id}/{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
 
@@ -51,11 +49,9 @@ namespace GamingWithMe.Application.Handlers
             await _s3Client.PutObjectAsync(putRequest, cancellationToken);
             var newAvatarUrl = $"https://{_bucketName}.s3.{_s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{key}";
 
-            // Update user's avatar URL
             user.AvatarUrl = newAvatarUrl;
             await _userRepository.Update(user);
 
-            // Delete the old avatar if it exists
             if (!string.IsNullOrEmpty(oldAvatarUrl))
             {
                 try
@@ -69,7 +65,7 @@ namespace GamingWithMe.Application.Handlers
                 }
                 catch (Exception)
                 {
-                    //TODO: Log the error, but don't fail the request if deletion fails
+                    
                 }
             }
 
