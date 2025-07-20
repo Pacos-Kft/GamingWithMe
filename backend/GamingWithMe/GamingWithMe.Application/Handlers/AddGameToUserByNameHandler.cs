@@ -24,22 +24,27 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(AddGameToUserByNameCommand request, CancellationToken cancellationToken)
         {
-            var user = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.UserId);
+            // First find the user by UserId
+            var userList = await _userRepo.ListAsync(cancellationToken);
+            var userFromList = userList.FirstOrDefault(x => x.UserId == request.UserId);
+
+            if (userFromList is null)
+                throw new InvalidOperationException("User not found");
+
+            // Get the tracked entity by ID with includes
+            var user = await _userRepo.GetByIdAsync(userFromList.Id, cancellationToken, x => x.Games);
 
             if (user is null)
                 throw new InvalidOperationException("User not found");
 
-            var game = (await _gameRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.Name.ToLower() == request.GameName.ToLower());
-            if (game == null)
-                throw new InvalidOperationException("Game not found.");
 
-            var alreadyHasGame = user.Games.Any(x => x.GameId == game.Id);
+            var alreadyHasGame = user.Games.Any(x => x.Gamename == request.GameName);
 
             if (!alreadyHasGame)
             {
                 user.Games.Add(new UserGame
                 {
-                    GameId = game.Id,
+                    Gamename = request.GameName,
                     PlayerId = user.Id
                 });
                 

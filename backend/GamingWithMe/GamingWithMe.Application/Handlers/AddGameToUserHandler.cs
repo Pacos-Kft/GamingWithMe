@@ -32,11 +32,11 @@ namespace GamingWithMe.Application.Handlers
             var game = await _gameRepository.GetByIdAsync(request.gameId, cancellationToken);
             if(game == null) throw new InvalidOperationException("Game not found.");
 
-            var alreadyHasGame = player.Games.Any(x=> x.GameId == game.Id);
+            var alreadyHasGame = player.Games.Any(x=> x.Gamename == game.Name);
 
             if (!alreadyHasGame)
             {
-                player.Games.Add(new UserGame { GameId = game.Id, PlayerId = player.Id});
+                player.Games.Add(new UserGame { Gamename = game.Name, PlayerId = player.Id});
             }
 
             await _playerRepository.Update(player);

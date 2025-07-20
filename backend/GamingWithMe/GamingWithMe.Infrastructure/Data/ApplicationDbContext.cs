@@ -69,15 +69,16 @@ namespace GamingWithMe.Infrastructure.Data
 
             builder.Entity<UserGame>(x =>
             {
-                x.HasKey(eg => new { eg.PlayerId, eg.GameId });
+                x.HasKey(eg => new { eg.PlayerId, eg.Gamename });
 
                 x.HasOne(eg => eg.Player)
                 .WithMany(p => p.Games)
-                .HasForeignKey(eg => eg.PlayerId);
+                .HasForeignKey(eg => eg.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-                x.HasOne(eg => eg.Game)
-                .WithMany(g => g.Players)
-                .HasForeignKey(ep => ep.GameId);
+                x.Property(eg => eg.Gamename)
+                .IsRequired()
+                .HasMaxLength(100);
             });
 
             builder.Entity<UserLanguage>(x =>

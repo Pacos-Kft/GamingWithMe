@@ -31,7 +31,7 @@ namespace GamingWithMe.Application.Handlers
             var game = await _gameRepository.GetByIdAsync(request.gameId, cancellationToken);
             if (game == null) throw new InvalidOperationException("Game not found.");
 
-            var entry = player.Games.FirstOrDefault(x=> x.GameId == game.Id);
+            var entry = player.Games.FirstOrDefault(x=> x.Gamename == game.Name);
 
             if (entry != null)
             {
