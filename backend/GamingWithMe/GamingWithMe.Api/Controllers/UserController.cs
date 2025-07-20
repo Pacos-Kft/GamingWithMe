@@ -84,9 +84,9 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpGet("profiles")]
         [AllowAnonymous]
-        public async Task<ActionResult<List<ProfileDto>>> GetProfiles([FromQuery] string? tag = null)
+        public async Task<ActionResult<List<ProfileDto>>> GetProfiles([FromQuery] string? tag = null, [FromQuery] int? top = null)
         {
-            var profiles = await _mediator.Send(new GetUserProfilesQuery(tag));
+            var profiles = await _mediator.Send(new GetUserProfilesQuery(tag, top));
 
             return profiles == null ? NotFound() : Ok(profiles);
         }

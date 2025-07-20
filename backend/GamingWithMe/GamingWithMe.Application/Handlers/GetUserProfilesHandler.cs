@@ -72,6 +72,12 @@ namespace GamingWithMe.Application.Handlers
                 filteredUsers = users.Where(u => u.Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals(request.Tag, StringComparison.OrdinalIgnoreCase)));
             }
 
+            // Apply top filter if specified
+            if (request.Top.HasValue && request.Top.Value > 0)
+            {
+                filteredUsers = filteredUsers.Take(request.Top.Value);
+            }
+
             // Map user entities to profile DTOs with proper relationships
             var profiles = new List<ProfileDto>();
             
