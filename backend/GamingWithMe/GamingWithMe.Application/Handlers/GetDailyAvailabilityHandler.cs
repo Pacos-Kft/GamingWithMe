@@ -30,7 +30,6 @@ namespace GamingWithMe.Application.Handlers
             GetDailyAvailabilityQuery request, 
             CancellationToken cancellationToken)
         {
-            // Find user by identity ID
             var user = (await _userRepo.ListAsync(cancellationToken))
                 .FirstOrDefault(x => x.UserId == request.UserId);
 
@@ -39,7 +38,6 @@ namespace GamingWithMe.Application.Handlers
                 throw new Exception("User not found");
             }
 
-            // Get all availability slots for this user on this date
             var slots = (await _availabilityRepo.ListAsync(cancellationToken))
                 .Where(a => a.UserId == user.Id && a.Date.Date == request.Date.Date)
                 .OrderBy(a => a.StartTime)
