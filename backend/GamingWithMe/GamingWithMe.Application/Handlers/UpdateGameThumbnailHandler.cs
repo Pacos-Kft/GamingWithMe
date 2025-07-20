@@ -15,7 +15,7 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly IAsyncRepository<Game> _gameRepository;
         private readonly IAmazonS3 _s3Client;
-        private readonly string _bucketName = "gamingwithme"; // Consider moving to configuration
+        private readonly string _bucketName = "gamingwithme";
 
         public UpdateGameThumbnailHandler(IAsyncRepository<Game> gameRepository, IAmazonS3 s3Client)
         {
@@ -63,8 +63,6 @@ namespace GamingWithMe.Application.Handlers
                 }
                 catch (Exception)
                 {
-                    // It's often best to log this error but not fail the entire operation,
-                    // as the primary goal (updating the thumbnail) has succeeded.
                 }
             }
 
