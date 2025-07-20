@@ -35,7 +35,6 @@ namespace GamingWithMe.Application.Handlers
 
             var billingHistory = new List<BillingRecordDto>();
 
-            // Bookings where the user was the customer (Paid)
             var paidBookings = bookings.Where(b => b.CustomerId == user.Id && b.StartTime <= DateTime.UtcNow);
             foreach (var booking in paidBookings)
             {
@@ -52,7 +51,6 @@ namespace GamingWithMe.Application.Handlers
                 }
             }
 
-            // Bookings where the user was the provider (Received)
             var receivedBookings = bookings.Where(b => b.ProviderId == user.Id && b.StartTime <= DateTime.UtcNow);
             foreach (var booking in receivedBookings)
             {
