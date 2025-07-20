@@ -156,9 +156,6 @@ builder.Services.Configure<MailjetSettings>(builder.Configuration.GetSection("Ma
 builder.Services.AddScoped<IEmailService, MailjetEmailService>();
 
 
-//builder.Services.AddInfrastructure(builder.Configuration);
-
-//builder.Services.AddApplication();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -200,7 +197,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapIdentityApi<IdentityUser>()
     .RequireCors("AllowFrontend");
-//app.MapHub<ChatHub>("/chatHub");
 
 using (var scope = app.Services.CreateScope())
 {
@@ -210,7 +206,6 @@ using (var scope = app.Services.CreateScope())
     var configuration = services.GetRequiredService<IConfiguration>();
     var userRepo = services.GetRequiredService<IAsyncRepository<User>>();
 
-    // Seed roles
     var roles = new[] { "Admin", "Regular" };
     foreach (var roleName in roles)
     {
@@ -220,7 +215,6 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // Seed Admin User
     var adminEmail = configuration["AdminUser:Email"];
     var adminUsername = configuration["AdminUser:Username"];
     var adminPassword = configuration["AdminUser:Password"];
@@ -235,13 +229,11 @@ using (var scope = app.Services.CreateScope())
 
             if (result.Succeeded)
             {
-                // Create the corresponding custom User entity
                 var customUser = new User(adminUser.Id, adminUsername);
                 await userRepo.AddAsync(customUser);
             }
         }
 
-        // Assign the Admin role if the user exists and is not already an admin
         if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
         {
             await userManager.AddToRoleAsync(adminUser, "Admin");
