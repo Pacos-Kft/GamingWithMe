@@ -39,7 +39,6 @@ namespace GamingWithMe.Application.Handlers
 
             if (customUser != null)
             {
-                // Check for any pending (future) bookings
                 var allBookings = await _bookingRepository.ListAsync(cancellationToken);
                 var hasPendingBookings = allBookings.Any(b =>
                     (b.ProviderId == customUser.Id || b.CustomerId == customUser.Id) &&
@@ -50,7 +49,6 @@ namespace GamingWithMe.Application.Handlers
                     throw new InvalidOperationException("Your account cannot be deleted because you have pending bookings. Please cancel or complete them first.");
                 }
 
-                // If no pending bookings, proceed with deleting related data
                 var bookingsToDelete = allBookings
                     .Where(b => b.ProviderId == customUser.Id || b.CustomerId == customUser.Id);
                 foreach (var booking in bookingsToDelete)
