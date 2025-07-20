@@ -30,7 +30,6 @@ namespace GamingWithMe.Application.Handlers
                 return false;
             }
 
-            // Delete the image from S3
             if (!string.IsNullOrEmpty(easterEgg.ImageUrl))
             {
                 try
@@ -44,7 +43,7 @@ namespace GamingWithMe.Application.Handlers
                 }
                 catch (Exception)
                 {
-                    // Log the error, but don't fail the request if S3 deletion fails
+                    
                 }
             }
 

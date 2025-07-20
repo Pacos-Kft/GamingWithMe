@@ -27,18 +27,15 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<UserDto> Handle(FacebookLoginCommand request, CancellationToken cancellationToken)
         {
-            // First, check if an IdentityUser with this email exists
             var identityUser = await _userManager.FindByEmailAsync(request.Email);
             
             if (identityUser != null)
             {
-                // Find the corresponding User entity
                 var existingUser = (await _userRepo.ListAsync(cancellationToken))
                     .FirstOrDefault(u => u.UserId == identityUser.Id);
 
                 if (existingUser != null)
                 {
-                    // Update FacebookId if it's not set
                     if (string.IsNullOrEmpty(existingUser.FacebookId) && !string.IsNullOrEmpty(request.FacebookId))
                     {
                         existingUser.FacebookId = request.FacebookId;
@@ -49,10 +46,8 @@ namespace GamingWithMe.Application.Handlers
                 }
             }
 
-            // Create new user if doesn't exist
             var username = GenerateUsernameFromEmail(request.Email);
             
-            // Ensure username is unique
             var existingUsernames = (await _userRepo.ListAsync(cancellationToken))
                 .Select(u => u.Username)
                 .ToList();
@@ -61,7 +56,7 @@ namespace GamingWithMe.Application.Handlers
 
             var registerDto = new RegisterDto(
                 email: request.Email,
-                password: null, // No password for Facebook login
+                password: null,
                 username: username,
                 googleId: null,
                 facebookId: request.FacebookId
@@ -71,7 +66,6 @@ namespace GamingWithMe.Application.Handlers
             {
                 var userId = await _mediator.Send(new RegisterProfileCommand(registerDto), cancellationToken);
                 
-                // Update the created user with FacebookId
                 var newUser = (await _userRepo.ListAsync(cancellationToken))
                     .FirstOrDefault(u => u.UserId == userId);
                 
@@ -92,7 +86,6 @@ namespace GamingWithMe.Application.Handlers
         private string GenerateUsernameFromEmail(string email)
         {
             var username = email.Split('@')[0];
-            // Remove any characters that aren't alphanumeric or underscore
             username = System.Text.RegularExpressions.Regex.Replace(username, @"[^a-zA-Z0-9_]", "");
             return username;
         }

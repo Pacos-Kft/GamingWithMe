@@ -28,23 +28,18 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<NewsDto> Handle(CreateNewsItemCommand request, CancellationToken cancellationToken)
         {
-            // Verify the game exists
             var game = await _gameRepo.GetByIdAsync(request.GameId, cancellationToken);
             if (game == null)
             {
                 throw new ApplicationException($"Game with ID {request.GameId} not found");
             }
 
-            // Create news item
             var newsItem = new GameNews(request.Title, request.Content, request.GameId);
             
-            // Save to repository
             await _repo.AddAsync(newsItem, cancellationToken);
             
-            // Load the game for proper mapping
             newsItem.Game = game;
 
-            // Return DTO
             return _mapper.Map<NewsDto>(newsItem);
         }
     }

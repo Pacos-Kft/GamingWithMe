@@ -24,14 +24,12 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(AddGameToUserByNameCommand request, CancellationToken cancellationToken)
         {
-            // First find the user by UserId
             var userList = await _userRepo.ListAsync(cancellationToken);
             var userFromList = userList.FirstOrDefault(x => x.UserId == request.UserId);
 
             if (userFromList is null)
                 throw new InvalidOperationException("User not found");
 
-            // Get the tracked entity by ID with includes
             var user = await _userRepo.GetByIdAsync(userFromList.Id, cancellationToken, x => x.Games);
 
             if (user is null)
@@ -52,7 +50,7 @@ namespace GamingWithMe.Application.Handlers
                 return true;
             }
 
-            return false; // Game already exists for user
+            return false; 
         }
     }
 }

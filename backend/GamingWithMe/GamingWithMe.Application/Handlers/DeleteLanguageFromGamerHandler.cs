@@ -25,14 +25,12 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(DeleteLanguageFromUserCommand request, CancellationToken cancellationToken)
         {
-            // First find the user by UserId
             var userList = await _userRepo.ListAsync(cancellationToken);
             var userFromList = userList.FirstOrDefault(x => x.UserId == request.userId);
 
             if (userFromList is null)
                 throw new InvalidOperationException("User not found");
 
-            // Get the tracked entity by ID with includes
             var user = await _userRepo.GetByIdAsync(userFromList.Id, cancellationToken, x => x.Languages);
 
             if (user is null)
@@ -51,7 +49,7 @@ namespace GamingWithMe.Application.Handlers
                 return true;
             }
 
-            return false; // Language was not associated with user
+            return false;
         }
     }
 }

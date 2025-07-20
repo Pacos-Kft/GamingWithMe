@@ -33,7 +33,6 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<List<ProfileDto>> Handle(GetUserProfilesQuery request, CancellationToken cancellationToken)
         {
-            // Get users with all their relationships
             var users = await _userRepo.ListAsync(cancellationToken, 
                 x => x.Languages, 
                 x => x.Games, 
@@ -42,15 +41,12 @@ namespace GamingWithMe.Application.Handlers
                 x => x.Products,
                 x => x.Bookings);
 
-            // Pre-load all related entities for efficient lookups
             var allLanguages = await _languageRepo.ListAsync(cancellationToken);
             var allTags = await _tagRepo.ListAsync(cancellationToken);
 
-            // Create dictionaries for fast lookups
             var languagesDict = allLanguages.ToDictionary(l => l.Id);
             var tagsDict = allTags.ToDictionary(t => t.Id);
 
-            // Link related entities
             foreach (var user in users)
             {
                 foreach (var ul in user.Languages)
@@ -72,18 +68,15 @@ namespace GamingWithMe.Application.Handlers
                 filteredUsers = users.Where(u => u.Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals(request.Tag, StringComparison.OrdinalIgnoreCase)));
             }
 
-            // Apply top filter if specified
             if (request.Top.HasValue && request.Top.Value > 0)
             {
                 filteredUsers = filteredUsers.Take(request.Top.Value);
             }
 
-            // Map user entities to profile DTOs with proper relationships
             var profiles = new List<ProfileDto>();
             
             foreach (var user in filteredUsers)
             {
-                // Map the user to a profile DTO with all the linked data
                 var profile = _mapper.Map<ProfileDto>(user);
                 profiles.Add(profile);
             }

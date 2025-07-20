@@ -28,7 +28,6 @@ namespace GamingWithMe.Application.Handlers
                 .Where(e => e.GameId == request.GameId)
                 .ToList();
 
-            // Update status of all events before mapping
             foreach (var gameEvent in events)
             {
                 gameEvent.UpdateStatus();

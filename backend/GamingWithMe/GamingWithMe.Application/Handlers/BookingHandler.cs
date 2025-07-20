@@ -29,9 +29,7 @@ namespace GamingWithMe.Application.Handlers
         {
             var customer = (await _userrepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.customerId);
 
-            //var provider = await _context.Users
-            //    .Include(u => u.DailyAvailability)
-            //    .FirstOrDefaultAsync(x => x.Id == request.ProviderId, cancellationToken);
+            
 
             var provider = (await _userrepo.GetByIdAsync(request.providerId, cancellationToken, x => x.DailyAvailability));
 

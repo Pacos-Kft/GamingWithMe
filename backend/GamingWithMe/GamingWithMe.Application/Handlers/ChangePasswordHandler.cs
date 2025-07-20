@@ -24,21 +24,18 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
         {
-            // Find the Identity user
             var identityUser = await _userManager.FindByIdAsync(request.UserId);
             if (identityUser == null)
             {
                 throw new InvalidOperationException("User not found.");
             }
 
-            // Check if the user has a password (some users might only use external logins)
             var hasPassword = await _userManager.HasPasswordAsync(identityUser);
             if (!hasPassword)
             {
                 throw new InvalidOperationException("This account uses external authentication and doesn't have a password.");
             }
 
-            // Validate the new password format
             ValidatePassword(request.NewPassword);
 
             // Change the password

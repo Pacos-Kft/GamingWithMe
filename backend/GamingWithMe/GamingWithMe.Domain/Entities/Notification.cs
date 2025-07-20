@@ -18,7 +18,7 @@ namespace GamingWithMe.Domain.Entities
             Title = title;
             Content = content;
             CreatedAt = DateTime.UtcNow;
-            IsPublished = false; // Default to not published
+            IsPublished = false;
         }
 
         public void Publish()

@@ -28,14 +28,12 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<GameEventDto> Handle(CreateGameEventCommand request, CancellationToken cancellationToken)
         {
-            // Verify the game exists
             var game = await _gameRepository.GetByIdAsync(request.GameId, cancellationToken);
             if (game == null)
             {
                 throw new ApplicationException($"Game with ID {request.GameId} not found");
             }
 
-            // Create the event
             var gameEvent = new GameEvent(
                 request.Title,
                 request.StartDate,
@@ -46,13 +44,10 @@ namespace GamingWithMe.Application.Handlers
                 request.GameId
             );
 
-            // Save to repository
             await _eventRepository.AddAsync(gameEvent, cancellationToken);
             
-            // Set the game for mapping
             gameEvent.Game = game;
 
-            // Return DTO
             return _mapper.Map<GameEventDto>(gameEvent);
         }
     }

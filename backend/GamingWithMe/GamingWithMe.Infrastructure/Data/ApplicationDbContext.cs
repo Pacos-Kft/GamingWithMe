@@ -142,14 +142,14 @@ namespace GamingWithMe.Infrastructure.Data
             );
 
             builder.Entity<Language>().HasData(
-                new Language("English") { Id = Guid.Parse("a1c4c9f1-1111-4a2d-8f27-1dfc52f7a100") },
-                new Language("Spanish") { Id = Guid.Parse("b2d5e2a2-2222-4a4d-9c36-2aec83b1b200") },
-                new Language("French") { Id = Guid.Parse("c3e6f3b3-3333-4b6e-af45-3bfc94c2c300") },
-                new Language("German") { Id = Guid.Parse("d4f7e4c4-4444-4c8f-be54-4c0da5d3d400") },
-                new Language("Chinese") { Id = Guid.Parse("e5a8d5d5-5555-4da0-af63-5d1eb6e4e500") },
-                new Language("Japanese") { Id = Guid.Parse("f6b9c6e6-6666-4eb1-a072-6e2fc7f5f600") },
-                new Language("Portuguese") { Id = Guid.Parse("07a0a7f7-7777-4fc2-b181-7f30d8060700") },
-                new Language("Russian") { Id = Guid.Parse("18b1b8f8-8888-4fd3-a290-8f41e9171800") }
+                new Language("English") { Id = new Guid("a1c4c9f1-1111-4a2d-8f27-1dfc52f7a100") },
+                new Language("Spanish") { Id = new Guid("b2d5e2a2-2222-4a4d-9c36-2aec83b1b200") },
+                new Language("French") { Id = new Guid("c3e6f3b3-3333-4b6e-af45-3bfc94c2c300") },
+                new Language("German") { Id = new Guid("d4f7e4c4-4444-4c8f-be54-4c0da5d3d400") },
+                new Language("Chinese") { Id = new Guid("e5a8d5d5-5555-4da0-af63-5d1eb6e4e500") },
+                new Language("Japanese") { Id = new Guid("f6b9c6e6-6666-4eb1-a072-6e2fc7f5f600") },
+                new Language("Portuguese") { Id = new Guid("07a0a7f7-7777-4fc2-b181-7f30d8060700") },
+                new Language("Russian") { Id = new Guid("18b1b8f8-8888-4fd3-a290-8f41e9171800") }
             );
 
 

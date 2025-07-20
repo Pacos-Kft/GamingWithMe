@@ -25,7 +25,6 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(SetDailyAvailabilityCommand request, CancellationToken cancellationToken)
         {
-            // Find user by identity ID
             var user = (await _userRepo.ListAsync(cancellationToken))
                 .FirstOrDefault(x => x.UserId == request.UserId);
 
@@ -34,7 +33,6 @@ namespace GamingWithMe.Application.Handlers
                 throw new Exception("User not found");
             }
 
-            // Parse times
             if (!TimeSpan.TryParse(request.Availability.StartTime, out var startTime))
                 throw new FormatException($"Invalid start time format: {request.Availability.StartTime}");
 
@@ -50,7 +48,6 @@ namespace GamingWithMe.Application.Handlers
             if (sessionDuration.TotalMinutes <= 0)
                 throw new ArgumentException("Session duration must be greater than 0");
 
-            // Remove any existing availability entries for this date
             var existingEntries = (await _availabilityRepo.ListAsync(cancellationToken))
                 .Where(a => a.UserId == user.Id && a.Date.Date == request.Availability.Date.Date)
                 .ToList();
@@ -60,7 +57,6 @@ namespace GamingWithMe.Application.Handlers
                 await _availabilityRepo.Delete(entry);
             }
 
-            // Create new time slots
             var currentTime = startTime;
             while (currentTime.Add(sessionDuration) <= endTime)
             {

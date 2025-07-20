@@ -35,7 +35,6 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<GameEasterEggDto> Handle(CreateGameEasterEggCommand request, CancellationToken cancellationToken)
         {
-            // Verify the game exists
             var game = await _gameRepository.GetByIdAsync(request.GameId, cancellationToken);
             if (game == null)
             {
@@ -56,7 +55,6 @@ namespace GamingWithMe.Application.Handlers
             await _s3Client.PutObjectAsync(putRequest, cancellationToken);
             var imageUrl = $"https://{_bucketName}.s3.{_s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{key}";
 
-            // Create the easter egg
             var easterEgg = new GameEasterEgg(
                 request.Description,
                 imageUrl,
@@ -66,10 +64,8 @@ namespace GamingWithMe.Application.Handlers
                 Id = easterEggId
             };
 
-            // Save to repository
             await _easterEggRepository.AddAsync(easterEgg, cancellationToken);
 
-            // Return DTO
             return _mapper.Map<GameEasterEggDto>(easterEgg);
         }
     }

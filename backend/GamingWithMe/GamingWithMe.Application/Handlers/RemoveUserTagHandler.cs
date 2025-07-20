@@ -32,7 +32,7 @@ namespace GamingWithMe.Application.Handlers
                 ut.UserId == user.Id && ut.TagId == request.TagId);
             
             if (userTag == null)
-                return false; // Tag wasn't assigned to begin with
+                return false; 
 
             await _userTagRepository.Delete(userTag);
             return true;
