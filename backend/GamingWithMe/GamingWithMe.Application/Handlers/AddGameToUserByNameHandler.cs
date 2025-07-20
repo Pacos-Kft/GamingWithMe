@@ -37,17 +37,14 @@ namespace GamingWithMe.Application.Handlers
             if (user is null)
                 throw new InvalidOperationException("User not found");
 
-            var game = (await _gameRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.Name.ToLower() == request.GameName.ToLower());
-            if (game == null)
-                throw new InvalidOperationException("Game not found.");
 
-            var alreadyHasGame = user.Games.Any(x => x.GameId == game.Id);
+            var alreadyHasGame = user.Games.Any(x => x.Gamename == request.GameName);
 
             if (!alreadyHasGame)
             {
                 user.Games.Add(new UserGame
                 {
-                    GameId = game.Id,
+                    Gamename = request.GameName,
                     PlayerId = user.Id
                 });
                 
