@@ -26,26 +26,21 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(AddUserTagCommand request, CancellationToken cancellationToken)
         {
-            // Check if user exists
-
 
             var user = (await _userRepository.ListAsync(cancellationToken)).FirstOrDefault(x=> x.UserId == request.UserId);
             if (user == null)
                 return false;
 
-            // Check if tag exists
             var tag = await _tagRepository.GetByIdAsync(request.TagId, cancellationToken);
             if (tag == null)
                 return false;
 
-            // Check if the tag is already assigned to the user
             var existingItems = await _userTagRepository.ListAsync(cancellationToken);
             var alreadyExists = existingItems.Any(ut => ut.UserId == user.Id && ut.TagId == request.TagId);
             
             if (alreadyExists)
-                return true; // Already has the tag, consider it successful
+                return true;
 
-            // Create and save the new user-tag relationship
             var userTag = new UserTag
             {
                 UserId = user.Id,
