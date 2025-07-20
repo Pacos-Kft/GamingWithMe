@@ -16,20 +16,17 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly IAsyncRepository<User> _userRepo;
         private readonly IAsyncRepository<Language> _languageRepo;
-        private readonly IAsyncRepository<Game> _gameRepo;
         private readonly IAsyncRepository<Tag> _tagRepo;
         private readonly IMapper _mapper;
 
         public GetUserProfilesHandler(
             IAsyncRepository<User> userRepo,
             IAsyncRepository<Language> languageRepo,
-            IAsyncRepository<Game> gameRepo,
             IAsyncRepository<Tag> tagRepo,
             IMapper mapper)
         {
             _userRepo = userRepo;
             _languageRepo = languageRepo;
-            _gameRepo = gameRepo;
             _tagRepo = tagRepo;
             _mapper = mapper;
         }
@@ -47,12 +44,10 @@ namespace GamingWithMe.Application.Handlers
 
             // Pre-load all related entities for efficient lookups
             var allLanguages = await _languageRepo.ListAsync(cancellationToken);
-            var allGames = await _gameRepo.ListAsync(cancellationToken);
             var allTags = await _tagRepo.ListAsync(cancellationToken);
 
             // Create dictionaries for fast lookups
             var languagesDict = allLanguages.ToDictionary(l => l.Id);
-            var gamesDict = allGames.ToDictionary(g => g.Id);
             var tagsDict = allTags.ToDictionary(t => t.Id);
 
             // Link related entities
@@ -62,12 +57,6 @@ namespace GamingWithMe.Application.Handlers
                 {
                     if (languagesDict.TryGetValue(ul.LanguageId, out var lang))
                         ul.Language = lang;
-                }
-                
-                foreach (var ug in user.Games)
-                {
-                    if (gamesDict.TryGetValue(ug.GameId, out var game))
-                        ug.Game = game;
                 }
                 
                 foreach (var ut in user.Tags)
