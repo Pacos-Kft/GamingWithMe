@@ -30,19 +30,6 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("Booking not found");
             }
 
-            //if (booking.Gamer == null || booking.User == null)
-            //{
-            //    throw new InvalidOperationException("Gamer or user not found");
-            //}
-
-            //return new BookingDto(
-            //    booking.Id,
-            //    booking.Gamer.Username,
-            //    booking.User.Username,
-            //    booking.StartTime,
-            //    booking.Duration,
-            //    booking.CreatedAt
-            //);
 
             return booking;
         }
