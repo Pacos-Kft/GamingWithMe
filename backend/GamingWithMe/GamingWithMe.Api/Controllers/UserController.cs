@@ -272,28 +272,7 @@ namespace GamingWithMe.Api.Controllers
         }
     }
 
-    public class UpdateBioDto
-    {
-        public string Bio { get; set; }
-    }
+    
 
-    public class UpdateUsernameDto
-    {
-        [Required]
-        [MinLength(3, ErrorMessage = "Username must be at least 3 characters long.")]
-        [MaxLength(50, ErrorMessage = "Username cannot be longer than 50 characters.")]
-        public string Username { get; set; }
-    }
-
-    public class ChangePasswordDto
-    {
-        [Required]
-        [DataType(DataType.Password)]
-        public string CurrentPassword { get; set; }
-
-        [Required]
-        [DataType(DataType.Password)]
-        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
-        public string NewPassword { get; set; }
-    }
+    
 }
