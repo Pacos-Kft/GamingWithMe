@@ -93,7 +93,6 @@ namespace GamingWithMe.Api.Controllers
         [HttpGet("login/google/callback")]
         public async Task<IActionResult> GoogleResponse([FromQuery] string returnUrl)
         {
-            // Use the external scheme to get the authentication result
             var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
             
             if (!authenticateResult.Succeeded)
@@ -127,7 +126,6 @@ namespace GamingWithMe.Api.Controllers
                     return BadRequest("Failed to process Google login.");
                 }
 
-                // Sign in the user with ASP.NET Identity
                 var identityUser = await _userManager.FindByEmailAsync(email);
                 if (identityUser != null)
                 {
@@ -153,7 +151,6 @@ namespace GamingWithMe.Api.Controllers
         [HttpGet("login/facebook/callback")]
         public async Task<IActionResult> FacebookResponse([FromQuery] string returnUrl)
         {
-            // Use the external scheme to get the authentication result
             var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
             
             if (!authenticateResult.Succeeded)
@@ -187,7 +184,6 @@ namespace GamingWithMe.Api.Controllers
                     return BadRequest("Failed to process Facebook login.");
                 }
 
-                // Sign in the user with ASP.NET Identity
                 var identityUser = await _userManager.FindByEmailAsync(email);
                 if (identityUser != null)
                 {
@@ -203,24 +199,5 @@ namespace GamingWithMe.Api.Controllers
         }
     }
 
-    public class ForgotPasswordDto
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; }
-    }
-
-    public class ResetPasswordDto
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; }
-
-        [Required]
-        public string Token { get; set; }
-
-        [Required]
-        [DataType(DataType.Password)]
-        public string NewPassword { get; set; }
-    }
+    
 }
