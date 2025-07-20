@@ -24,7 +24,15 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<bool> Handle(DeleteGameFromUserByNameCommand request, CancellationToken cancellationToken)
         {
-            var user = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(x => x.UserId == request.UserId);
+            // First find the user by UserId
+            var userList = await _userRepo.ListAsync(cancellationToken);
+            var userFromList = userList.FirstOrDefault(x => x.UserId == request.UserId);
+
+            if (userFromList is null)
+                throw new InvalidOperationException("User not found");
+
+            // Get the tracked entity by ID with includes
+            var user = await _userRepo.GetByIdAsync(userFromList.Id, cancellationToken, x => x.Games);
 
             if (user is null)
                 throw new InvalidOperationException("User not found");
@@ -33,7 +41,7 @@ namespace GamingWithMe.Application.Handlers
             if (game == null)
                 throw new InvalidOperationException("Game not found.");
 
-            var entry = user.Games.FirstOrDefault(x => x.GameId == game.Id);
+            var entry = user.Games?.FirstOrDefault(x => x.GameId == game.Id);
 
             if (entry != null)
             {
@@ -42,7 +50,7 @@ namespace GamingWithMe.Application.Handlers
                 return true;
             }
 
-            return false;
+            return false; // Game was not associated with user
         }
     }
 }
