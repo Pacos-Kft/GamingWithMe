@@ -53,18 +53,6 @@ namespace GamingWithMe.Application.Handlers
                 }
 
 
-                //var availability = new UserAvailability
-                //{
-                //    Id = Guid.NewGuid(),
-                //    UserId = userid,
-                //    DayOfWeek = day,
-                //    StartTime = start,
-                //    EndTime = end
-                //};
-
-                //await _arepo.AddAsync(availability);
-
-
             }
 
             return true;
