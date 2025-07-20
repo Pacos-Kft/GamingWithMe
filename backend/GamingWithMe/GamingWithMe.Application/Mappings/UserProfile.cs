@@ -18,7 +18,7 @@ namespace GamingWithMe.Application.Mappings
                 .ForMember(d => d.languages, 
                     opt => opt.MapFrom(src => src.Languages.Select(l => l.Language.Name).ToList()))
                 .ForMember(d => d.games, 
-                    opt => opt.MapFrom(src => src.Games.Select(g => g.Game.Name).ToList()))
+                    opt => opt.MapFrom(src => src.Games.Select(g => g.Gamename).ToList()))
                 .ForMember(d => d.tags, 
                     opt => opt.MapFrom(src => src.Tags.Select(t => t.Tag.Name).ToList()))
                 .ForMember(d => d.hasStripeAccount, 
