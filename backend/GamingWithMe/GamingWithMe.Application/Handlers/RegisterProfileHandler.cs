@@ -1,6 +1,7 @@
 ﻿using GamingWithMe.Application.Commands;
 using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Application.Services;
 using GamingWithMe.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -27,7 +28,6 @@ namespace GamingWithMe.Application.Handlers
             _emailService = emailService;
         }
 
-
         public async Task<string> Handle(RegisterProfileCommand request, CancellationToken cancellationToken)
         {
             var dto = request.RegisterDto;
@@ -38,7 +38,11 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("An account with this email already exists.");
             }
 
-            var existingCustomUser = (await _userRepo.ListAsync(cancellationToken)).FirstOrDefault(u => u.Username == dto.username);
+            // Validate username using the new validation service
+            UsernameValidationService.ValidateUsername(dto.username);
+
+            var existingCustomUser = (await _userRepo.ListAsync(cancellationToken))
+                .FirstOrDefault(u => string.Equals(u.Username, dto.username, StringComparison.OrdinalIgnoreCase));
             if (existingCustomUser != null)
             {
                 throw new InvalidOperationException("This username is already taken. Please choose another one.");
@@ -62,7 +66,6 @@ namespace GamingWithMe.Application.Handlers
                 result = await _userManager.CreateAsync(user);
             }
 
-
             if (!result.Succeeded) {
                 var errorMessages = result.Errors.Select(e => e.Description);
                 throw new InvalidOperationException(string.Join("; ", errorMessages));
@@ -70,10 +73,7 @@ namespace GamingWithMe.Application.Handlers
 
             await _userRepo.AddAsync(new User(user.Id, dto.username));
 
-            
-
             return user.Id;
-            
         }
 
         private void ValidatePassword(string password)
@@ -89,7 +89,5 @@ namespace GamingWithMe.Application.Handlers
             if (!Regex.IsMatch(password, @"[\W_]")) // \W is any non-word character
                 throw new InvalidOperationException("Password must contain at least one special character.");
         }
-
-
     }
 }
