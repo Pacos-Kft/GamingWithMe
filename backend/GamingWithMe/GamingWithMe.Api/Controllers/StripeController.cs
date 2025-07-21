@@ -33,12 +33,15 @@ namespace GamingWithMe.Api.Controllers
         public string PriceId { get; set; }
     }
 
-    public class PaymentWithCouponRequest
+    // Updated payment request to handle both types
+    public class PaymentRequest
     {
-        public Guid AppointmentId { get; set; }
+        public string PaymentType { get; set; } = "appointment"; // "appointment" or "service"
+        public Guid? AppointmentId { get; set; } // For appointment bookings
+        public Guid? ServiceId { get; set; } // For service orders
         public string? CouponId { get; set; }
+        public string? CustomerNotes { get; set; } // For service orders
     }
-
 
     [Route("api/[controller]")]
     [ApiController]
@@ -54,10 +57,9 @@ namespace GamingWithMe.Api.Controllers
         private readonly string _webhookSecret;
         private readonly IAsyncRepository<User> _gamerRepo;
         private readonly IAsyncRepository<Domain.Entities.Discount> _discountRepo;
+        private readonly IAsyncRepository<FixedService> _serviceRepo;
 
-
-
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo)
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo, IAsyncRepository<FixedService> serviceRepo)
         {
             _model = model.Value;
             _token = token;
@@ -65,16 +67,16 @@ namespace GamingWithMe.Api.Controllers
             _charge = charge;
             _product = product;
             _mediator = mediator;
-            // It's recommended to store your webhook secret in appsettings.json or another secure configuration provider
-            _webhookSecret = _model.WebhookSecret; // Replace with your actual webhook signing secret
+            _webhookSecret = _model.WebhookSecret;
             _priceService = priceService;
             _gamerRepo = gamerRepo;
             _discountRepo = discountRepo;
+            _serviceRepo = serviceRepo;
         }
 
-        [HttpPost("pay/{creatorId}")]
+        [HttpPost("pay/{providerId}")]
         [Authorize]
-        public async Task<IActionResult> Pay(Guid creatorId, [FromBody] PaymentWithCouponRequest request /*[FromBody] Guid appointmentId*/ /*[FromBody] BookingDetailsDto request*/)
+        public async Task<IActionResult> Pay(Guid providerId, [FromBody] PaymentRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -83,61 +85,81 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest("User not found");
             }
 
-            var cmd = (creatorId, userId, request.AppointmentId);
-
-            var gamer = await _gamerRepo.GetByIdAsync(creatorId, default, x => x.DailyAvailability, q => q.Discounts);
-
-            if (gamer == null)
-            {
-                return BadRequest();
-            }
-
-            //var product = gamer.Products.FirstOrDefault();
-
-            //if (product == null) {
-            //    return NotFound();
-            //}
-
-            var connectedAccount = gamer.StripeAccount;
-
-            var schedule = gamer.DailyAvailability.FirstOrDefault(x => x.Id == request.AppointmentId);
-            if (schedule == null)
-            {
-                return BadRequest("Schedule doesnt exist");
-            }
-
-
             try
             {
-                var validationCommand = new ValidateBookingCommand(cmd.creatorId, cmd.userId, cmd.AppointmentId);
-                await _mediator.Send(validationCommand);
-
                 StripeConfiguration.ApiKey = _model.SecretKey;
 
+                var provider = await _gamerRepo.GetByIdAsync(providerId, default, 
+                    x => x.DailyAvailability, 
+                    q => q.Discounts, 
+                    s => s.FixedServices);
 
-                // Retrieve the actual price information
-                //var price = _priceService.Get(product.StripePriceId);
-                //if (price == null)
-                //    return BadRequest("Invalid price ID");
+                if (provider == null)
+                {
+                    return BadRequest("Provider not found");
+                }
+
+                var connectedAccount = provider.StripeAccount;
+
+                if (string.IsNullOrEmpty(connectedAccount))
+                {
+                    return BadRequest("Provider hasn't set up payments");
+                }
+
+                long price = 0;
+                string productName = "";
+                string paymentType = request.PaymentType.ToLower();
+
+                if (paymentType == "appointment")
+                {
+                    if (!request.AppointmentId.HasValue)
+                        return BadRequest("AppointmentId is required for appointment bookings");
+
+                    var schedule = provider.DailyAvailability.FirstOrDefault(x => x.Id == request.AppointmentId.Value);
+                    if (schedule == null)
+                        return BadRequest("Schedule doesn't exist");
+
+                    var validationCommand = new ValidateBookingCommand(providerId, userId, request.AppointmentId.Value);
+                    await _mediator.Send(validationCommand);
+
+                    price = schedule.Price * 100;
+                    productName = "Gaming Session";
+                }
+                else if (paymentType == "service")
+                {
+                    if (!request.ServiceId.HasValue)
+                        return BadRequest("ServiceId is required for service orders");
+
+                    var szervice = provider.FixedServices.FirstOrDefault(s => s.Id == request.ServiceId.Value);
+                    if (szervice == null)
+                        return BadRequest("Service doesn't exist");
+
+                    if (szervice.Status != ServiceStatus.Active)
+                        return BadRequest("Service is not available");
+
+                    price = szervice.Price;
+                    productName = szervice.Title;
+                }
+                else
+                {
+                    return BadRequest("PaymentType must be either 'appointment' or 'service'");
+                }
 
                 // Calculate fee as 10% of the actual price
-                var price = schedule.Price * 100;
                 long applicationFee = (long)(price * 0.10);
 
-                var options = new SessionCreateOptions
+                var sessionOptions = new SessionCreateOptions
                 {
                     LineItems = new List<SessionLineItemOptions>
                     {
                         new SessionLineItemOptions
                         {
-                            //Price = product.StripePriceId,
-                            //Quantity = 1,
                             PriceData = new SessionLineItemPriceDataOptions
                             {
                                 Currency = "usd",
                                 ProductData = new SessionLineItemPriceDataProductDataOptions
                                 {
-                                    Name = "Session"
+                                    Name = productName
                                 },
                                 UnitAmount = price,
                             },
@@ -157,19 +179,22 @@ namespace GamingWithMe.Api.Controllers
                     },
                     Metadata = new Dictionary<string, string>
                     {
-                        { "bookingDetails", JsonSerializer.Serialize(cmd) },
-                        { "creatorId", creatorId.ToString() },
-                        { "userId", userId }
+                        { "paymentType", paymentType },
+                        { "providerId", providerId.ToString() },
+                        { "customerId", userId },
+                        { "appointmentId", request.AppointmentId?.ToString() ?? "" },
+                        { "serviceId", request.ServiceId?.ToString() ?? "" },
+                        { "customerNotes", request.CustomerNotes ?? "" }
                     }
                 };
 
                 if (!string.IsNullOrEmpty(request.CouponId))
                 {
-                    var discount = gamer.Discounts.FirstOrDefault(x => x.StripeId == request.CouponId);
+                    var discount = provider.Discounts.FirstOrDefault(x => x.StripeId == request.CouponId);
 
                     if (discount != null)
                     {
-                        options.Discounts = new List<SessionDiscountOptions>
+                        sessionOptions.Discounts = new List<SessionDiscountOptions>
                         {
                             new SessionDiscountOptions
                             {
@@ -177,23 +202,19 @@ namespace GamingWithMe.Api.Controllers
                             }
                         };
                     }
-
-
                 }
 
-                //options.Customer = "cus_SaCXeZDWJH5t4L";
-
                 var service = new SessionService();
-                Session session = service.Create(options);
+                Session session = service.Create(sessionOptions);
 
-                // Return more details for debugging
                 return Ok(new
                 {
                     CheckoutUrl = session.Url,
                     PriceAmount = price,
                     ApplicationFee = applicationFee,
                     SessionId = session.Id,
-                    ConnectedAccount = connectedAccount
+                    ConnectedAccount = connectedAccount,
+                    PaymentType = paymentType
                 });
             }
             catch (InvalidOperationException ex)
@@ -206,9 +227,9 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        [HttpPost("refund/{bookingId}")]
+        [HttpPost("refund/booking/{bookingId}")]
         [Authorize]
-        public async Task<IActionResult> RefundPayment(Guid bookingId)
+        public async Task<IActionResult> RefundBooking(Guid bookingId)
         {
             try
             {
@@ -256,7 +277,8 @@ namespace GamingWithMe.Api.Controllers
                     Success = true,
                     RefundId = refund.Id,
                     Amount = refund.Amount,
-                    Status = refund.Status
+                    Status = refund.Status,
+                    Type = "booking"
                 });
             }
             catch (StripeException ex)
@@ -267,6 +289,84 @@ namespace GamingWithMe.Api.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Error = ex.Message });
             }
+        }
+
+        [HttpPost("refund/service-order/{orderId}")]
+        [Authorize]
+        public async Task<IActionResult> RefundServiceOrder(Guid orderId)
+        {
+            try
+            {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
+                // 1. Get the service order
+                var order = await _mediator.Send(new GetServiceOrderByIdQuery(orderId));
+                if (order == null)
+                    return NotFound("Service order not found");
+
+                // Check if the order can be canceled (within 24 hours of order date or before work starts)
+                var hoursSinceOrder = (DateTime.UtcNow - order.OrderDate).TotalHours;
+                if (hoursSinceOrder > 24 && order.Status != OrderStatus.Pending)
+                {
+                    return BadRequest("Service order cannot be canceled after 24 hours or once work has started.");
+                }
+
+                // 2. Check authorization (only the customer or provider can refund)
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var isCustomer = order.Customer?.UserId == currentUserId;
+                var isProvider = order.Provider?.UserId == currentUserId;
+
+                if (!isCustomer && !isProvider)
+                    return Forbid("You don't have permission to refund this service order");
+
+                // 3. Check if the order has a payment ID
+                if (string.IsNullOrEmpty(order.PaymentIntentId))
+                    return BadRequest("No payment information associated with this service order");
+
+                // 4. Check if order is already completed
+                if (order.Status == OrderStatus.Completed)
+                    return BadRequest("Cannot refund a completed service order");
+
+                // 5. Create refund via Stripe
+                var refundService = new RefundService();
+                var refundOptions = new RefundCreateOptions
+                {
+                    PaymentIntent = order.PaymentIntentId,
+                    Reason = RefundReasons.RequestedByCustomer
+                };
+
+                var refund = await refundService.CreateAsync(refundOptions);
+
+                // 6. Update order status to cancelled and delete
+                order.Status = OrderStatus.Cancelled;
+                await _mediator.Send(new DeleteServiceOrderCommand(orderId));
+
+                return Ok(new
+                {
+                    Success = true,
+                    RefundId = refund.Id,
+                    Amount = refund.Amount,
+                    Status = refund.Status,
+                    Type = "service-order"
+                });
+            }
+            catch (StripeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { Error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Error = ex.Message });
+            }
+        }
+
+        // Keep the original refund endpoint for backward compatibility
+        [HttpPost("refund/{bookingId}")]
+        [Authorize]
+        public async Task<IActionResult> RefundPayment(Guid bookingId)
+        {
+            return await RefundBooking(bookingId);
         }
 
         [HttpPost("webhook")]
@@ -284,15 +384,29 @@ namespace GamingWithMe.Api.Controllers
                     var session = stripeEvent.Data.Object as Session;
                     if (session.PaymentStatus == "paid")
                     {
-                        // Retrieve booking details from metadata
-                        var bookingDetailsJson = session.Metadata["bookingDetails"];
-                        var booking = JsonSerializer.Deserialize<BookingCommand>(bookingDetailsJson);
+                        var paymentType = session.Metadata.GetValueOrDefault("paymentType", "appointment");
 
-                        var bookingCommand = new BookingCommand(booking.providerId, booking.customerId, session.PaymentIntentId, booking.appointmentId);
+                        if (paymentType == "appointment")
+                        {
+                            // Handle appointment booking
+                            var providerId = Guid.Parse(session.Metadata["providerId"]);
+                            var customerId = session.Metadata["customerId"];
+                            var appointmentId = Guid.Parse(session.Metadata["appointmentId"]);
 
+                            var bookingCommand = new BookingCommand(providerId, customerId, session.PaymentIntentId, appointmentId);
+                            await _mediator.Send(bookingCommand);
+                        }
+                        else if (paymentType == "service")
+                        {
+                            // Handle service order
+                            var serviceId = Guid.Parse(session.Metadata["serviceId"]);
+                            var customerId = session.Metadata["customerId"];
+                            var customerNotes = session.Metadata.GetValueOrDefault("customerNotes");
 
-                        // Create the booking
-                        await _mediator.Send(bookingCommand);
+                            var orderDto = new CreateServiceOrderDto(serviceId, customerNotes);
+                            var orderCommand = new CreateServiceOrderCommand(customerId, orderDto, session.PaymentIntentId);
+                            await _mediator.Send(orderCommand);
+                        }
                     }
                 }
 
@@ -303,7 +417,6 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest(e.Message);
             }
         }
-        
 
         [HttpPost("create-connected-account")]
         [AllowAnonymous]
@@ -311,7 +424,6 @@ namespace GamingWithMe.Api.Controllers
         {
             StripeConfiguration.ApiKey = _model.SecretKey;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
 
             if (userId == null)
             {
@@ -331,7 +443,6 @@ namespace GamingWithMe.Api.Controllers
         [Authorize]
         public async Task<IActionResult> CreateCoupon([FromBody] CreateCouponRequest request)
         {
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x=> x.UserId == userId);
@@ -339,7 +450,6 @@ namespace GamingWithMe.Api.Controllers
             if (user == null) {
                 return BadRequest("User not found");
             }
-
 
             try
             {
@@ -390,7 +500,6 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-
         [HttpGet("validate-coupon-by-name/{couponName}")]
         public async Task<IActionResult> ValidateCouponByName(string couponName)
         {
@@ -432,6 +541,5 @@ namespace GamingWithMe.Api.Controllers
                 return Ok(new { Valid = false, Message = "Error validating coupon" });
             }
         }
-
     }
 }

@@ -28,6 +28,10 @@ namespace GamingWithMe.Infrastructure.Data
         public DbSet<GameEvent> GameEvents => Set<GameEvent>();
         public DbSet<GameEasterEgg> GameEasterEggs => Set<GameEasterEgg>();
         public DbSet<Discount> Discounts => Set<Discount>();
+        
+        // New DbSets for fixed services
+        public DbSet<FixedService> FixedServices => Set<FixedService>();
+        public DbSet<ServiceOrder> ServiceOrders => Set<ServiceOrder>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -118,8 +122,6 @@ namespace GamingWithMe.Infrastructure.Data
                     .HasForeignKey(x => x.UserId);
             });
 
-           
-
             builder.Entity<UserTag>(x =>
             {
                 x.HasKey(ut => new { ut.UserId, ut.TagId });
@@ -131,6 +133,40 @@ namespace GamingWithMe.Infrastructure.Data
                 x.HasOne(ut => ut.Tag)
                     .WithMany(t => t.Users)
                     .HasForeignKey(ut => ut.TagId);
+            });
+
+            // New entity configurations for fixed services
+            builder.Entity<FixedService>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Title).IsRequired().HasMaxLength(200);
+                e.Property(x => x.Description).IsRequired();
+                e.Property(x => x.StripePriceId).IsRequired();
+                
+                e.HasOne(x => x.User)
+                    .WithMany(u => u.FixedServices)
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ServiceOrder>(e =>
+            {
+                e.HasKey(x => x.Id);
+                
+                e.HasOne(x => x.Service)
+                    .WithMany()
+                    .HasForeignKey(x => x.ServiceId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.Customer)
+                    .WithMany(u => u.ServiceOrders)
+                    .HasForeignKey(x => x.CustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.Provider)
+                    .WithMany(u => u.ReceivedOrders)
+                    .HasForeignKey(x => x.ProviderId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<Tag>().HasData(
@@ -151,8 +187,6 @@ namespace GamingWithMe.Infrastructure.Data
                 new Language("Portuguese") { Id = new Guid("07a0a7f7-7777-4fc2-b181-7f30d8060700") },
                 new Language("Russian") { Id = new Guid("18b1b8f8-8888-4fd3-a290-8f41e9171800") }
             );
-
-
         }
     }
 }

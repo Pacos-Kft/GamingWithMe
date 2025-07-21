@@ -1,5 +1,6 @@
 using GamingWithMe.Application.Commands;
 using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Application.Services;
 using GamingWithMe.Domain.Entities;
 using MediatR;
 using System;
@@ -28,27 +29,15 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("User not found.");
             }
 
+            // Validate username using the new validation service
+            UsernameValidationService.ValidateUsername(request.NewUsername);
+
             var existingUser = (await _userRepository.ListAsync(cancellationToken))
-                .FirstOrDefault(u => u.Username.ToLower() == request.NewUsername.ToLower() && u.Id != user.Id);
+                .FirstOrDefault(u => string.Equals(u.Username, request.NewUsername, StringComparison.OrdinalIgnoreCase) && u.Id != user.Id);
 
             if (existingUser != null)
             {
                 throw new InvalidOperationException("This username is already taken. Please choose another one.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.NewUsername))
-            {
-                throw new InvalidOperationException("Username cannot be empty.");
-            }
-
-            if (request.NewUsername.Length < 3)
-            {
-                throw new InvalidOperationException("Username must be at least 3 characters long.");
-            }
-
-            if (request.NewUsername.Length > 50)
-            {
-                throw new InvalidOperationException("Username cannot be longer than 50 characters.");
             }
 
             user.Username = request.NewUsername;

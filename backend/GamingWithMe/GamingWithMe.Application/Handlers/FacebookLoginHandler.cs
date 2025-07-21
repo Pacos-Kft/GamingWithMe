@@ -1,6 +1,7 @@
 using GamingWithMe.Application.Commands;
 using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
+using GamingWithMe.Application.Services;
 using GamingWithMe.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -46,13 +47,13 @@ namespace GamingWithMe.Application.Handlers
                 }
             }
 
-            var username = GenerateUsernameFromEmail(request.Email);
+            var username = UsernameValidationService.GenerateUsernameFromEmail(request.Email);
             
             var existingUsernames = (await _userRepo.ListAsync(cancellationToken))
                 .Select(u => u.Username)
                 .ToList();
             
-            username = EnsureUniqueUsername(username, existingUsernames);
+            username = UsernameValidationService.EnsureUniqueUsername(username, existingUsernames);
 
             var registerDto = new RegisterDto(
                 email: request.Email,
@@ -81,32 +82,6 @@ namespace GamingWithMe.Application.Handlers
             {
                 throw new InvalidOperationException($"Failed to create user account: {ex.Message}", ex);
             }
-        }
-
-        private string GenerateUsernameFromEmail(string email)
-        {
-            var username = email.Split('@')[0];
-            username = System.Text.RegularExpressions.Regex.Replace(username, @"[^a-zA-Z0-9_]", "");
-            return username;
-        }
-
-        private string EnsureUniqueUsername(string baseUsername, List<string> existingUsernames)
-        {
-            if (!existingUsernames.Contains(baseUsername))
-            {
-                return baseUsername;
-            }
-
-            int counter = 1;
-            string uniqueUsername;
-            do
-            {
-                uniqueUsername = $"{baseUsername}{counter}";
-                counter++;
-            }
-            while (existingUsernames.Contains(uniqueUsername));
-
-            return uniqueUsername;
         }
     }
 }
