@@ -2,30 +2,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GamingWithMe.Domain.Entities
 {
     public class User
     {
-        public Guid Id { get; set; }      
-
+        public Guid Id { get; set; }
         public string UserId { get; set; }
         public virtual IdentityUser IdentityUser { get; set; }
-
-        public string StripeAccount {  get; set; }
-        public string StripeCustomer {  get; set; }
-
+        public string StripeAccount { get; set; }
+        public string StripeCustomer { get; set; }
         public string Username { get; set; }
         public string Bio { get; set; }
         public bool IsActive { get; set; }
-
         public string GoogleId { get; set; }
         public string FacebookId { get; set; }
-
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // Existing collections
         public ICollection<Booking> Bookings { get; set; }
         public ICollection<UserLanguage> Languages { get; set; }
         public ICollection<UserAvailability> DailyAvailability { get; set; }
@@ -34,31 +29,49 @@ namespace GamingWithMe.Domain.Entities
         public ICollection<UserTag> Tags { get; set; }
         public ICollection<Discount> Discounts { get; set; }
 
+        // New collections for fixed services
+        public ICollection<FixedService> FixedServices { get; set; }
+        public ICollection<ServiceOrder> ServiceOrders { get; set; }
+        public ICollection<ServiceOrder> ReceivedOrders { get; set; }
+
         public User()
         {
-
+            Bookings = new List<Booking>();
+            Languages = new List<UserLanguage>();
+            DailyAvailability = new List<UserAvailability>();
+            Products = new List<Product>();
+            Games = new List<UserGame>();
+            Tags = new List<UserTag>();
+            Discounts = new List<Discount>();
+            FixedServices = new List<FixedService>();
+            ServiceOrders = new List<ServiceOrder>();
+            ReceivedOrders = new List<ServiceOrder>();
         }
 
-        public User(string userId, string username)
+        public User(string userId, string username) : this()
         {
             Id = Guid.NewGuid();
             UserId = userId;
             Username = username;
-            AvatarUrl = string.Empty;
             CreatedAt = DateTime.UtcNow;
-            Bookings = new List<Booking>();
-            StripeAccount = string.Empty;
-            StripeCustomer = string.Empty;
-            GoogleId = string.Empty;
-            FacebookId = string.Empty; 
-            Bio = string.Empty;
-            Languages = new List<UserLanguage>();
-            Games = new List<UserGame>();
-            IsActive = false;
-            DailyAvailability = new List<UserAvailability>();
-            Products = new List<Product>();
-            Tags = new List<UserTag>();
-            Discounts = new List<Discount>();
+            Bio = "";
+            AvatarUrl = "";
+            GoogleId = "";
+            FacebookId = "";
+            StripeAccount = "";
+            StripeCustomer = "";
+        }
+
+        // Helper method to check if user is in gaming category
+        public bool IsGamer()
+        {
+            return Tags.Any(ut => ut.Tag.Name.Equals("Gamer", StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Helper method to check if user can use booking system
+        public bool CanUseBookingSystem()
+        {
+            return IsGamer();
         }
     }
 }
