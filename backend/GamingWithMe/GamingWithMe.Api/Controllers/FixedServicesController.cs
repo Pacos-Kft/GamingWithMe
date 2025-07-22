@@ -24,7 +24,6 @@ namespace GamingWithMe.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<List<FixedServiceDto>>> GetServices(
             [FromQuery] string? category = null,
-            [FromQuery] bool? isCustomService = null,
             [FromQuery] Guid? userId = null)
         {
             var services = await _mediator.Send(new GetFixedServicesQuery(userId, category));
