@@ -22,7 +22,10 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<List<FixedServiceDto>> Handle(GetFixedServicesQuery request, CancellationToken cancellationToken)
         {
-            var services = await _serviceRepository.ListAsync(cancellationToken, s => s.User, s => s.User.Tags);
+            // Include both User and the nested Tags with their Tag navigation properties
+            var services = await _serviceRepository.ListAsync(cancellationToken, 
+                s => s.User, 
+                s => s.User.Tags.Select(ut => ut.Tag));
             
             var filteredServices = services.AsQueryable();
 
@@ -34,7 +37,7 @@ namespace GamingWithMe.Application.Handlers
             if (!string.IsNullOrEmpty(request.Category))
             {
                 filteredServices = filteredServices.Where(s => 
-                    s.User.Tags.Any(ut => ut.Tag.Name.Equals(request.Category, StringComparison.OrdinalIgnoreCase)));
+                    s.User.Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals(request.Category, StringComparison.OrdinalIgnoreCase)));
             }
 
             if (request.IsCustomService.HasValue)

@@ -62,10 +62,13 @@ namespace GamingWithMe.Domain.Entities
             StripeCustomer = "";
         }
 
-        // Helper method to check if user is in gaming category
+        // Helper method to check if user is in gaming category - fixed to handle null Tag navigation properties
         public bool IsGamer()
         {
-            return Tags.Any(ut => ut.Tag.Name.Equals("Gamer", StringComparison.OrdinalIgnoreCase));
+            if (Tags == null || !Tags.Any())
+                return false;
+
+            return Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals("Gamer", StringComparison.OrdinalIgnoreCase));
         }
 
         // Helper method to check if user can use booking system

@@ -27,6 +27,7 @@ namespace GamingWithMe.Domain.Entities
         public long Price { get; set; } // Price in cents
         public string StripePriceId { get; set; }
         public ServiceDeadline DeliveryDeadline { get; set; }
+
         public ServiceStatus Status { get; set; } = ServiceStatus.Active;
         public Guid UserId { get; set; }
         public User User { get; set; }
