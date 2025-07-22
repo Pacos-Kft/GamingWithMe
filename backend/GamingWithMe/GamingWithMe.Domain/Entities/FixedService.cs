@@ -24,8 +24,7 @@ namespace GamingWithMe.Domain.Entities
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public long Price { get; set; } // Price in cents
-        public string StripePriceId { get; set; }
+        public long Price { get; set; }
         public ServiceDeadline DeliveryDeadline { get; set; }
 
         public ServiceStatus Status { get; set; } = ServiceStatus.Active;
@@ -33,8 +32,6 @@ namespace GamingWithMe.Domain.Entities
         public User User { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        // For gaming category, this can be true to allow custom gaming services
-        public bool IsCustomService { get; set; } = false;
 
         public FixedService()
         {
@@ -43,15 +40,13 @@ namespace GamingWithMe.Domain.Entities
         }
 
         public FixedService(string title, string description, long price, ServiceDeadline deliveryDeadline, 
-            Guid userId, string stripePriceId, bool isCustomService = false) : this()
+            Guid userId) : this()
         {
             Title = title;
             Description = description;
             Price = price;
             DeliveryDeadline = deliveryDeadline;
             UserId = userId;
-            StripePriceId = stripePriceId;
-            IsCustomService = isCustomService;
         }
 
         public int GetDeadlineInDays()
