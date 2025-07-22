@@ -25,9 +25,9 @@ namespace GamingWithMe.Api.Controllers
         public async Task<ActionResult<List<FixedServiceDto>>> GetServices(
             [FromQuery] string? category = null,
             [FromQuery] bool? isCustomService = null,
-            [FromQuery] string? userId = null)
+            [FromQuery] Guid? userId = null)
         {
-            var services = await _mediator.Send(new GetFixedServicesQuery(userId, category, isCustomService));
+            var services = await _mediator.Send(new GetFixedServicesQuery(userId, category));
             return Ok(services);
         }
 
@@ -36,7 +36,7 @@ namespace GamingWithMe.Api.Controllers
         public async Task<ActionResult<List<FixedServiceDto>>> GetMyServices()
         {
             var userId = GetUserId();
-            var services = await _mediator.Send(new GetFixedServicesQuery(userId));
+            var services = await _mediator.Send(new GetMyFixedServicesQuery(userId));
             return Ok(services);
         }
 
