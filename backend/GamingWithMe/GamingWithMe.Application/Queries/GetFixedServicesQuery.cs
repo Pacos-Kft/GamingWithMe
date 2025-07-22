@@ -6,8 +6,7 @@ using System.Collections.Generic;
 namespace GamingWithMe.Application.Queries
 {
     public record GetFixedServicesQuery(
-        string? UserId = null,
-        string? Category = null,
-        bool? IsCustomService = null
+        Guid? UserId = null,
+        string? Category = null
     ) : IRequest<List<FixedServiceDto>>;
 }
