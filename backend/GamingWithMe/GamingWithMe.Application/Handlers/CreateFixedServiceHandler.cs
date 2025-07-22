@@ -30,21 +30,14 @@ namespace GamingWithMe.Application.Handlers
             if (user == null)
                 throw new InvalidOperationException("User not found");
 
-            // Check if user is gamer and trying to create custom service
-            //if (request.ServiceDto.IsCustomService && !user.IsGamer())
-            //    throw new InvalidOperationException("Only gamers can create custom services");
-
-            // Create Stripe price first (TODO)
-            //string stripePriceId = await CreateStripePrice(request.ServiceDto);
+            
 
             var service = new FixedService(
                 request.ServiceDto.Title,
                 request.ServiceDto.Description,
                 request.ServiceDto.Price,
                 request.ServiceDto.DeliveryDeadline,
-                user.Id,
-                "",
-                request.ServiceDto.IsCustomService
+                user.Id
             );
 
             await _serviceRepository.AddAsync(service, cancellationToken);

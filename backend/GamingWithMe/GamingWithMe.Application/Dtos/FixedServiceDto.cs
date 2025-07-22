@@ -12,7 +12,6 @@ namespace GamingWithMe.Application.Dtos
         ServiceStatus Status,
         string Username,
         string AvatarUrl,
-        bool IsCustomService,
         DateTime CreatedAt
     );
 
@@ -20,8 +19,7 @@ namespace GamingWithMe.Application.Dtos
         string Title,
         string Description,
         long Price,
-        ServiceDeadline DeliveryDeadline,
-        bool IsCustomService = false
+        ServiceDeadline DeliveryDeadline
     );
 
     public record ServiceOrderDto(

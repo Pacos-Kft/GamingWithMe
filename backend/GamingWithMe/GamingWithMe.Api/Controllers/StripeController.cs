@@ -24,7 +24,6 @@ namespace GamingWithMe.Api.Controllers
         public decimal PercentOff { get; set; }
         public int DurationInDays { get; set; }
         public int? MaxRedemptions { get; set; }
-        public string? CouponId { get; set; }
     }
 
     public class ApplyCouponRequest
@@ -460,7 +459,6 @@ namespace GamingWithMe.Api.Controllers
                     Name = request.Name,
                     PercentOff = (decimal?)request.PercentOff,
                     Duration = "once", // Can be "forever", "once", or "repeating"
-                    Id = request.CouponId ?? null, // Custom ID if provided
                     MaxRedemptions = request.MaxRedemptions
                 };
 
