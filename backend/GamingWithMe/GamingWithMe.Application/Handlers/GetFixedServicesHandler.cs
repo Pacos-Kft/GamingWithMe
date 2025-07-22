@@ -1,3 +1,4 @@
+using AutoMapper;
 using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
@@ -16,15 +17,18 @@ namespace GamingWithMe.Application.Handlers
         private readonly IAsyncRepository<FixedService> _serviceRepository;
         private readonly IAsyncRepository<User> _userRepository;
         private readonly IAsyncRepository<Tag> _tagRepository;
+        private readonly IMapper _mapper;
 
         public GetFixedServicesHandler(
             IAsyncRepository<FixedService> serviceRepository,
             IAsyncRepository<User> userRepository,
-            IAsyncRepository<Tag> tagRepository)
+            IAsyncRepository<Tag> tagRepository,
+            IMapper mapper)
         {
             _serviceRepository = serviceRepository;
             _userRepository = userRepository;
             _tagRepository = tagRepository;
+            _mapper = mapper;
         }
 
         public async Task<List<FixedServiceDto>> Handle(GetFixedServicesQuery request, CancellationToken cancellationToken)
@@ -63,9 +67,9 @@ namespace GamingWithMe.Application.Handlers
             
             var filteredServices = services.AsQueryable();
 
-            if (!string.IsNullOrEmpty(request.UserId))
+            if (request.UserId != null)
             {
-                filteredServices = filteredServices.Where(s => s.User.UserId == request.UserId);
+                filteredServices = filteredServices.Where(s => s.UserId == request.UserId);
             }
 
             if (!string.IsNullOrEmpty(request.Category))
@@ -74,27 +78,12 @@ namespace GamingWithMe.Application.Handlers
                     s.User.Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals(request.Category, StringComparison.OrdinalIgnoreCase)));
             }
 
-            if (request.IsCustomService.HasValue)
-            {
-                filteredServices = filteredServices.Where(s => s.IsCustomService == request.IsCustomService.Value);
-            }
-
-            return filteredServices
+            var activeServices = filteredServices
                 .Where(s => s.Status == ServiceStatus.Active)
-                .Select(s => new FixedServiceDto(
-                    s.Id,
-                    s.Title,
-                    s.Description,
-                    s.Price,
-                    s.DeliveryDeadline,
-                    s.Status,
-                    s.User.Username,
-                    s.User.AvatarUrl,
-                    s.IsCustomService,
-                    s.CreatedAt
-                ))
                 .OrderByDescending(s => s.CreatedAt)
                 .ToList();
+
+            return _mapper.Map<List<FixedServiceDto>>(activeServices);
         }
     }
 }
