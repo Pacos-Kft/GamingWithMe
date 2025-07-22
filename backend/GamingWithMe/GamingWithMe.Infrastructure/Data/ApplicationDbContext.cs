@@ -141,7 +141,6 @@ namespace GamingWithMe.Infrastructure.Data
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Title).IsRequired().HasMaxLength(200);
                 e.Property(x => x.Description).IsRequired();
-                e.Property(x => x.StripePriceId).IsRequired();
                 
                 e.HasOne(x => x.User)
                     .WithMany(u => u.FixedServices)
