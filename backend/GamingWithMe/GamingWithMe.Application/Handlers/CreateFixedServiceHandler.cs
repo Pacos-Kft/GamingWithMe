@@ -31,11 +31,11 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("User not found");
 
             // Check if user is gamer and trying to create custom service
-            if (request.ServiceDto.IsCustomService && !user.IsGamer())
-                throw new InvalidOperationException("Only gamers can create custom services");
+            //if (request.ServiceDto.IsCustomService && !user.IsGamer())
+            //    throw new InvalidOperationException("Only gamers can create custom services");
 
             // Create Stripe price first (TODO)
-            string stripePriceId = await CreateStripePrice(request.ServiceDto);
+            //string stripePriceId = await CreateStripePrice(request.ServiceDto);
 
             var service = new FixedService(
                 request.ServiceDto.Title,
@@ -43,7 +43,7 @@ namespace GamingWithMe.Application.Handlers
                 request.ServiceDto.Price,
                 request.ServiceDto.DeliveryDeadline,
                 user.Id,
-                stripePriceId,
+                "",
                 request.ServiceDto.IsCustomService
             );
 
@@ -51,11 +51,5 @@ namespace GamingWithMe.Application.Handlers
             return service.Id;
         }
 
-        private async Task<string> CreateStripePrice(CreateFixedServiceDto serviceDto)
-        {
-            // TODO: Implement Stripe price creation
-            // For now, return a placeholder
-            return $"price_{Guid.NewGuid().ToString("N")[..16]}";
-        }
     }
 }
