@@ -14,18 +14,52 @@ namespace GamingWithMe.Application.Handlers
     public class GetFixedServicesHandler : IRequestHandler<GetFixedServicesQuery, List<FixedServiceDto>>
     {
         private readonly IAsyncRepository<FixedService> _serviceRepository;
+        private readonly IAsyncRepository<User> _userRepository;
+        private readonly IAsyncRepository<Tag> _tagRepository;
 
-        public GetFixedServicesHandler(IAsyncRepository<FixedService> serviceRepository)
+        public GetFixedServicesHandler(
+            IAsyncRepository<FixedService> serviceRepository,
+            IAsyncRepository<User> userRepository,
+            IAsyncRepository<Tag> tagRepository)
         {
             _serviceRepository = serviceRepository;
+            _userRepository = userRepository;
+            _tagRepository = tagRepository;
         }
 
         public async Task<List<FixedServiceDto>> Handle(GetFixedServicesQuery request, CancellationToken cancellationToken)
         {
-            // Include both User and the nested Tags with their Tag navigation properties
-            var services = await _serviceRepository.ListAsync(cancellationToken, 
-                s => s.User, 
-                s => s.User.Tags.Select(ut => ut.Tag));
+            // Get services with just the User included
+            var services = await _serviceRepository.ListAsync(cancellationToken, s => s.User);
+            
+            // Get all users with their tags
+            var users = await _userRepository.ListAsync(cancellationToken, u => u.Tags);
+            var allTags = await _tagRepository.ListAsync(cancellationToken);
+            
+            // Create dictionaries for efficient lookups
+            var userDict = users.ToDictionary(u => u.Id);
+            var tagDict = allTags.ToDictionary(t => t.Id);
+            
+            // Manually populate the Tag navigation properties
+            foreach (var user in users)
+            {
+                foreach (var userTag in user.Tags)
+                {
+                    if (tagDict.TryGetValue(userTag.TagId, out var tag))
+                    {
+                        userTag.Tag = tag;
+                    }
+                }
+            }
+            
+            // Update services with the populated user data
+            foreach (var service in services)
+            {
+                if (userDict.TryGetValue(service.UserId, out var populatedUser))
+                {
+                    service.User = populatedUser;
+                }
+            }
             
             var filteredServices = services.AsQueryable();
 
