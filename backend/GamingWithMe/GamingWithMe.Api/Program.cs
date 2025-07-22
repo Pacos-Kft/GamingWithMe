@@ -1,11 +1,9 @@
 ﻿using Amazon.S3;
-using GamingWithMe.Application.DependencyInjection;
 using GamingWithMe.Application.Handlers;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Mappings;
 using GamingWithMe.Domain.Entities;
 using GamingWithMe.Infrastructure.Data;
-using GamingWithMe.Infrastructure.DependencyInjection;
 using GamingWithMe.Infrastructure.Repositories;
 using GamingWithMe.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
