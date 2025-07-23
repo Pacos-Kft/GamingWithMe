@@ -17,6 +17,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,13 +31,15 @@ namespace GamingWithMe.Api.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AccountController(IMediator mediator, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IEmailService emailService)
+        public AccountController(IMediator mediator, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IEmailService emailService, IConfiguration configuration)
         {
             _mediator = mediator;
             _userManager = userManager;
             _signInManager = signInManager;
-            _emailService = emailService;   
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
@@ -51,6 +54,139 @@ namespace GamingWithMe.Api.Controllers
         {
             await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
             return NoContent();
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            {
+                // Don't reveal that the user does not exist or is not confirmed
+                return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            // Get frontend URL from configuration
+            var frontendUrl = /*_configuration["Frontend:BaseUrl"] ??*/ "https://localhost:7019";
+            var resetLink = $"http://localhost:7091/reset-password?email={Uri.EscapeDataString(user.Email)}&token={encodedToken}";
+
+
+            var emailVariables = new Dictionary<string, string>
+            {
+                { "user_email", user.Email },
+                { "reset_link", resetLink },
+                { "username", user.UserName ?? user.Email }
+            };
+
+            try
+            {
+                // Replace with your actual Mailjet template ID for password reset
+                await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Reset Your Password - GamingWithMe",
+                    6048162, // Replace with your actual template ID
+                    emailVariables
+                );
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't reveal it to the user
+                // You should add proper logging here
+                Console.WriteLine($"Failed to send password reset email: {ex.Message}");
+            }
+
+            return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null)
+            {
+                // Don't reveal that the user does not exist
+                return BadRequest("Error resetting password.");
+            }
+
+            // Validate the new password before attempting reset
+            try
+            {
+                ValidatePassword(dto.NewPassword);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(dto.Token));
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
+
+            if (result.Succeeded)
+            {
+                // Send confirmation email that password was reset
+                try
+                {
+                    var emailVariables = new Dictionary<string, string>
+                    {
+                        { "user_email", user.Email },
+                        { "username", user.UserName ?? user.Email },
+                        { "reset_time", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC" }
+                    };
+
+                    await _emailService.SendEmailAsync(
+                        user.Email,
+                        "Password Reset Successful - GamingWithMe",
+                        6048163, // Replace with your actual template ID for password reset confirmation
+                        emailVariables
+                    );
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail the request
+                    Console.WriteLine($"Failed to send password reset confirmation email: {ex.Message}");
+                }
+
+                return Ok("Password has been reset successfully.");
+            }
+
+            // Provide more specific error information
+            var errors = result.Errors.Select(e => e.Description);
+            return BadRequest(new
+            {
+                Message = "Error resetting password.",
+                Errors = errors
+            });
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User not authenticated");
+            }
+
+            try
+            {
+                var command = new ChangePasswordCommand(userId, dto.CurrentPassword, dto.NewPassword);
+                var result = await _mediator.Send(command);
+
+                if (result)
+                {
+                    return Ok("Password changed successfully.");
+                }
+
+                return BadRequest("Failed to change password.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("delete")]
@@ -94,7 +230,7 @@ namespace GamingWithMe.Api.Controllers
         public async Task<IActionResult> GoogleResponse([FromQuery] string returnUrl)
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 return BadRequest("Google authentication failed.");
@@ -152,7 +288,7 @@ namespace GamingWithMe.Api.Controllers
         public async Task<IActionResult> FacebookResponse([FromQuery] string returnUrl)
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 return BadRequest("Facebook authentication failed.");
@@ -197,7 +333,19 @@ namespace GamingWithMe.Api.Controllers
                 return BadRequest($"Facebook login failed: {ex.Message}");
             }
         }
-    }
 
-    
+        private void ValidatePassword(string password)
+        {
+            if (password.Length < 6)
+                throw new InvalidOperationException("Password must be at least 6 characters long.");
+            if (!Regex.IsMatch(password, @"[A-Z]"))
+                throw new InvalidOperationException("Password must contain at least one uppercase letter.");
+            if (!Regex.IsMatch(password, @"[a-z]"))
+                throw new InvalidOperationException("Password must contain at least one lowercase letter.");
+            if (!Regex.IsMatch(password, @"\d"))
+                throw new InvalidOperationException("Password must contain at least one number.");
+            if (!Regex.IsMatch(password, @"[\W_]"))
+                throw new InvalidOperationException("Password must contain at least one special character.");
+        }
+    }
 }
