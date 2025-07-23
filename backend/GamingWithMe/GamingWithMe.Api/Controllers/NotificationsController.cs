@@ -29,6 +29,14 @@ namespace GamingWithMe.Api.Controllers
             return Ok(notifications);
         }
 
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<List<NotificationDto>>> GetAllNotifications()
+        {
+            var notifications = await _mediator.Send(new GetAllNotificationsQuery());
+            return Ok(notifications);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<NotificationDto>> CreateNotification([FromBody] CreateNotificationCommand command)
