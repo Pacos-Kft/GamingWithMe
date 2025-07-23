@@ -1,4 +1,5 @@
 using GamingWithMe.Application.Commands;
+using GamingWithMe.Application.Dtos;
 using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Domain.Entities;
 using MediatR;
@@ -15,15 +16,18 @@ namespace GamingWithMe.Application.Handlers
         private readonly IAsyncRepository<User> _userRepository;
         private readonly IAsyncRepository<FixedService> _serviceRepository;
         private readonly IAsyncRepository<ServiceOrder> _orderRepository;
+        private readonly IEmailService _emailService;
 
         public CreateServiceOrderHandler(
             IAsyncRepository<User> userRepository,
             IAsyncRepository<FixedService> serviceRepository,
-            IAsyncRepository<ServiceOrder> orderRepository)
+            IAsyncRepository<ServiceOrder> orderRepository,
+            IEmailService emailService)
         {
             _userRepository = userRepository;
             _serviceRepository = serviceRepository;
             _orderRepository = orderRepository;
+            _emailService = emailService;
         }
 
         public async Task<Guid> Handle(CreateServiceOrderCommand request, CancellationToken cancellationToken)
@@ -34,7 +38,7 @@ namespace GamingWithMe.Application.Handlers
             if (customer == null)
                 throw new InvalidOperationException("Customer not found");
 
-            var service = await _serviceRepository.GetByIdAsync(request.OrderDto.ServiceId, cancellationToken, s => s.User);
+            var service = await _serviceRepository.GetByIdAsync(request.OrderDto.ServiceId, cancellationToken, s => s.User, s => s.User.IdentityUser);
 
             if (service == null)
                 throw new InvalidOperationException("Service not found");
@@ -52,7 +56,62 @@ namespace GamingWithMe.Application.Handlers
             );
 
             await _orderRepository.AddAsync(order, cancellationToken);
+
+            // Send emails to both provider and customer
+            await SendServiceOrderConfirmationEmails(service.User, customer, service, order);
+
             return order.Id;
+        }
+
+        private async Task SendServiceOrderConfirmationEmails(User provider, User customer, FixedService service, ServiceOrder order)
+        {
+            try
+            {
+                // Get provider and customer email addresses
+                var providerEmail = provider.IdentityUser?.Email;
+                var customerEmail = customer.IdentityUser?.Email;
+
+                // Email variables for templates
+                var emailVariables = new Dictionary<string, string>
+                {
+                    { "provider_name", provider.Username },
+                    { "customer_name", customer.Username },
+                    { "service_title", service.Title },
+                    { "service_description", service.Description },
+                    { "price", (service.Price / 100m).ToString("C") },
+                    { "order_date", order.OrderDate.ToString("MMMM dd, yyyy") },
+                    { "delivery_deadline", order.DeliveryDeadline.ToString("MMMM dd, yyyy") },
+                    { "customer_notes", order.CustomerNotes ?? "No special notes" },
+                    { "order_id", order.Id.ToString() }
+                };
+
+                // Send email to provider
+                if (!string.IsNullOrEmpty(providerEmail))
+                {
+                    await _emailService.SendEmailAsync(
+                        providerEmail,
+                        "New Service Order Received",
+                        1234569, // Replace with Mailjet template ID for provider service order
+                        emailVariables
+                    );
+                }
+
+                // Send email to customer
+                if (!string.IsNullOrEmpty(customerEmail))
+                {
+                    await _emailService.SendEmailAsync(
+                        customerEmail,
+                        "Service Order Confirmation",
+                        1234570, // Replace with Mailjet template ID for customer service order
+                        emailVariables
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't fail the order process
+                Console.WriteLine($"Failed to send service order confirmation emails: {ex.Message}");
+            }
         }
     }
 }
