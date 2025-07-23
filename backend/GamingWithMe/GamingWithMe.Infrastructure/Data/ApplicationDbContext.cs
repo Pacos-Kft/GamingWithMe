@@ -32,6 +32,8 @@ namespace GamingWithMe.Infrastructure.Data
         // New DbSets for fixed services
         public DbSet<FixedService> FixedServices => Set<FixedService>();
         public DbSet<ServiceOrder> ServiceOrders => Set<ServiceOrder>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
