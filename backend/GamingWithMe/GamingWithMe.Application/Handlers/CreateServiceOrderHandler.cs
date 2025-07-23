@@ -91,7 +91,7 @@ namespace GamingWithMe.Application.Handlers
                     await _emailService.SendEmailAsync(
                         providerEmail,
                         "New Service Order Received",
-                        1234569, // Replace with Mailjet template ID for provider service order
+                        7178616, // Replace with Mailjet template ID for provider service order
                         emailVariables
                     );
                 }
@@ -102,7 +102,7 @@ namespace GamingWithMe.Application.Handlers
                     await _emailService.SendEmailAsync(
                         customerEmail,
                         "Service Order Confirmation",
-                        1234570, // Replace with Mailjet template ID for customer service order
+                        7178615, // Replace with Mailjet template ID for customer service order
                         emailVariables
                     );
                 }
