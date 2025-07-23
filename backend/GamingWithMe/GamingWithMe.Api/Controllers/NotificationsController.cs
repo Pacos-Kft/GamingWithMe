@@ -23,9 +23,9 @@ namespace GamingWithMe.Api.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<List<NotificationDto>>> GetPublishedNotifications()
+        public async Task<ActionResult<List<NotificationDto>>> GetNotifications([FromQuery] bool isPublished = true)
         {
-            var notifications = await _mediator.Send(new GetPublishedNotificationsQuery());
+            var notifications = await _mediator.Send(new GetNotificationsQuery(isPublished));
             return Ok(notifications);
         }
 
@@ -34,7 +34,7 @@ namespace GamingWithMe.Api.Controllers
         public async Task<ActionResult<NotificationDto>> CreateNotification([FromBody] CreateNotificationCommand command)
         {
             var notification = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetPublishedNotifications), new { id = notification.Id }, notification);
+            return CreatedAtAction(nameof(GetNotifications), new { id = notification.Id }, notification);
         }
 
         [HttpPut("{notificationId}/publish")]
