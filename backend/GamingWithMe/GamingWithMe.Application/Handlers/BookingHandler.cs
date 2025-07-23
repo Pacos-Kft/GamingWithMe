@@ -93,7 +93,7 @@ namespace GamingWithMe.Application.Handlers
                     await _emailService.SendEmailAsync(
                         providerEmail,
                         "New Booking Received - Gaming Session",
-                        1234567, // Replace with Mailjet template ID for provider
+                        7178607, // Replace with Mailjet template ID for provider
                         emailVariables
                     );
                 }
@@ -104,7 +104,7 @@ namespace GamingWithMe.Application.Handlers
                     await _emailService.SendEmailAsync(
                         customerEmail,
                         "Booking Confirmation - Gaming Session",
-                        1234568, // Replace with Mailjet template ID for customer
+                        7178601, // Replace with Mailjet template ID for customer
                         emailVariables
                     );
                 }

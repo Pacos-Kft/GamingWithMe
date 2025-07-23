@@ -87,7 +87,7 @@ namespace GamingWithMe.Api.Controllers
                 await _emailService.SendEmailAsync(
                     user.Email,
                     "Reset Your Password - GamingWithMe",
-                    6048162, // Replace with your actual template ID
+                    7178587, // Replace with your actual template ID
                     emailVariables
                 );
             }
