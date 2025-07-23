@@ -36,14 +36,10 @@ namespace GamingWithMe.Application.Handlers
             if (!TimeSpan.TryParse(request.Availability.StartTime, out var startTime))
                 throw new FormatException($"Invalid start time format: {request.Availability.StartTime}");
 
-            if (!TimeSpan.TryParse(request.Availability.EndTime, out var endTime))
-                throw new FormatException($"Invalid end time format: {request.Availability.EndTime}");
 
             if (!TimeSpan.TryParse(request.Availability.SessionDuration, out var sessionDuration))
                 throw new FormatException($"Invalid session duration format: {request.Availability.SessionDuration}");
 
-            if (startTime >= endTime)
-                throw new ArgumentException("Start time must be before end time");
 
             if (sessionDuration.TotalMinutes <= 0)
                 throw new ArgumentException("Session duration must be greater than 0");
@@ -58,8 +54,7 @@ namespace GamingWithMe.Application.Handlers
             }
 
             var currentTime = startTime;
-            while (currentTime.Add(sessionDuration) <= endTime)
-            {
+            
                 var availability = new UserAvailability(
                     user.Id,
                     request.Availability.Date,
@@ -70,7 +65,7 @@ namespace GamingWithMe.Application.Handlers
 
                 await _availabilityRepo.AddAsync(availability, cancellationToken);
                 currentTime = currentTime.Add(sessionDuration);
-            }
+            
 
             return true;
         }
