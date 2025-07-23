@@ -232,12 +232,12 @@ namespace GamingWithMe.Api.Controllers
             return Ok(availability);
         }
 
-        [HttpDelete("daily-availability/{date}")]
-        public async Task<IActionResult> DeleteDailyAvailability(DateTime date)
+        [HttpDelete("daily-availability/{date}/{startTime}")]
+        public async Task<IActionResult> DeleteDailyAvailability(DateTime date, string startTime)
         {
             var userId = GetUserId();
 
-            var result = await _mediator.Send(new DeleteDailyAvailabilityCommand(userId, date));
+            var result = await _mediator.Send(new DeleteDailyAvailabilityCommand(userId, date, startTime));
 
             return result ? Ok(true) : BadRequest("Failed to delete availability");
         }

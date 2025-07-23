@@ -32,19 +32,20 @@ namespace GamingWithMe.Application.Handlers
                 throw new Exception("User not found");
             }
 
-            var existingEntries = (await _availabilityRepo.ListAsync(cancellationToken))
-                .Where(a => a.UserId == user.Id && a.Date.Date == request.Date.Date)
-                .ToList();
+            if (!TimeSpan.TryParse(request.StartTime, out var startTime))
+                throw new FormatException($"Invalid start time format: {request.StartTime}");
 
-            if (!existingEntries.Any())
+            var existingEntry = (await _availabilityRepo.ListAsync(cancellationToken))
+                .FirstOrDefault(a => a.UserId == user.Id && 
+                                   a.Date.Date == request.Date.Date && 
+                                   a.StartTime == startTime);
+
+            if (existingEntry == null)
             {
                 return true; 
             }
 
-            foreach (var entry in existingEntries)
-            {
-                await _availabilityRepo.Delete(entry);
-            }
+            await _availabilityRepo.Delete(existingEntry);
 
             return true;
         }
