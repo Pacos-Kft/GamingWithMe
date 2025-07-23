@@ -48,10 +48,7 @@ namespace GamingWithMe.Application.Handlers
                 .Where(a => a.UserId == user.Id && a.Date.Date == request.Availability.Date.Date)
                 .ToList();
 
-            foreach (var entry in existingEntries)
-            {
-                await _availabilityRepo.Delete(entry);
-            }
+            
 
             var currentTime = startTime;
             
