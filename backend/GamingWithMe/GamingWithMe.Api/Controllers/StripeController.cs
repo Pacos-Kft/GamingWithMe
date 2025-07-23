@@ -57,8 +57,9 @@ namespace GamingWithMe.Api.Controllers
         private readonly IAsyncRepository<User> _gamerRepo;
         private readonly IAsyncRepository<Domain.Entities.Discount> _discountRepo;
         private readonly IAsyncRepository<FixedService> _serviceRepo;
+        private readonly ILogger<StripeController> _logger;
 
-        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo, IAsyncRepository<FixedService> serviceRepo)
+        public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo, IAsyncRepository<FixedService> serviceRepo, ILogger<StripeController> logger)
         {
             _model = model.Value;
             _token = token;
@@ -71,6 +72,7 @@ namespace GamingWithMe.Api.Controllers
             _gamerRepo = gamerRepo;
             _discountRepo = discountRepo;
             _serviceRepo = serviceRepo;
+            _logger = logger;
         }
 
         [HttpPost("pay/{providerId}")]
@@ -174,6 +176,16 @@ namespace GamingWithMe.Api.Controllers
                         TransferData = new SessionPaymentIntentDataTransferDataOptions
                         {
                             Destination = connectedAccount
+                        },
+                        // Add metadata to PaymentIntent as well
+                        Metadata = new Dictionary<string, string>
+                        {
+                            { "paymentType", paymentType },
+                            { "providerId", providerId.ToString() },
+                            { "customerId", userId },
+                            { "appointmentId", request.AppointmentId?.ToString() ?? "" },
+                            { "serviceId", request.ServiceId?.ToString() ?? "" },
+                            { "sessionId", "" } // Will be populated after session creation
                         }
                     },
                     Metadata = new Dictionary<string, string>
@@ -371,49 +383,178 @@ namespace GamingWithMe.Api.Controllers
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook()
         {
+            _logger.LogInformation("Stripe webhook endpoint entered at {Timestamp}", DateTime.UtcNow);
+
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+
+            _logger.LogInformation("Webhook request body received. Length: {Length} characters", json.Length);
+
             try
             {
+                StripeConfiguration.ApiKey = _model.SecretKey;
+
                 var stripeEvent = EventUtility.ConstructEvent(json,
                     Request.Headers["Stripe-Signature"], _webhookSecret);
+
+                _logger.LogInformation("Stripe event constructed successfully. Event type: {EventType}, Event ID: {EventId}",
+                    stripeEvent.Type, stripeEvent.Id);
 
                 // Handle the event
                 if (stripeEvent.Type == "checkout.session.completed")
                 {
+                    _logger.LogInformation("Processing checkout.session.completed event");
+
                     var session = stripeEvent.Data.Object as Session;
+
+                    _logger.LogInformation("Session details - ID: {SessionId}, PaymentStatus: {PaymentStatus}, PaymentIntentId: {PaymentIntentId}",
+                        session.Id, session.PaymentStatus, session.PaymentIntentId ?? "NULL");
+
                     if (session.PaymentStatus == "paid")
                     {
+                        _logger.LogInformation("Payment confirmed for session {SessionId}, payment status: {PaymentStatus}",
+                            session.Id, session.PaymentStatus);
+
+                        string paymentIntentId = null;
+
+                        // Try multiple approaches to get the PaymentIntentId
+                        if (!string.IsNullOrEmpty(session.PaymentIntentId))
+                        {
+                            paymentIntentId = session.PaymentIntentId;
+                            _logger.LogInformation("Found PaymentIntentId directly from session: {PaymentIntentId}", paymentIntentId);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("PaymentIntentId is null, trying to retrieve session with expanded PaymentIntent");
+
+                            try
+                            {
+                                var sessionService = new SessionService();
+                                var expandedSession = await sessionService.GetAsync(session.Id, new SessionGetOptions
+                                {
+                                    Expand = new List<string> { "payment_intent" }
+                                });
+
+                                _logger.LogInformation("Expanded session retrieved. PaymentIntent available: {HasPaymentIntent}",
+                                    expandedSession?.PaymentIntent != null);
+
+                                if (expandedSession?.PaymentIntent != null)
+                                {
+                                    paymentIntentId = expandedSession.PaymentIntent.Id;
+                                    _logger.LogInformation("Retrieved PaymentIntentId from expanded session: {PaymentIntentId}", paymentIntentId);
+                                }
+                                else if (!string.IsNullOrEmpty(expandedSession?.PaymentIntentId))
+                                {
+                                    paymentIntentId = expandedSession.PaymentIntentId;
+                                    _logger.LogInformation("Retrieved PaymentIntentId from expanded session property: {PaymentIntentId}", paymentIntentId);
+                                }
+                                else
+                                {
+                                    _logger.LogError("Expanded session does not contain PaymentIntent. Session mode: {Mode}, Status: {Status}",
+                                        expandedSession?.Mode, expandedSession?.Status);
+
+                                    // Log all available properties for debugging
+                                    _logger.LogInformation("Session debug info - Mode: {Mode}, Status: {Status}, Amount Total: {AmountTotal}, Customer: {Customer}",
+                                        expandedSession?.Mode,
+                                        expandedSession?.Status,
+                                        expandedSession?.AmountTotal,
+                                        expandedSession?.CustomerId);
+                                }
+                            }
+                            catch (StripeException ex)
+                            {
+                                _logger.LogError(ex, "Stripe error while expanding session: {Message}", ex.Message);
+                            }
+                        }
+
+                        // If we still don't have PaymentIntentId, try alternative approaches
+                        if (string.IsNullOrEmpty(paymentIntentId))
+                        {
+                            _logger.LogWarning("Could not retrieve PaymentIntentId through normal methods. Attempting alternative approaches for session {SessionId}", session.Id);
+
+                            // Alternative 1: Use session ID as a temporary identifier and process the booking anyway
+                            // This is a fallback approach - you might want to implement a different strategy
+                            paymentIntentId = $"session_{session.Id}"; // Temporary fallback
+
+                            _logger.LogWarning("Using session-based fallback PaymentIntentId: {PaymentIntentId}", paymentIntentId);
+
+                            // You could also:
+                            // 1. Store this booking with a placeholder and update it later when payment_intent.succeeded fires
+                            // 2. Skip processing now and handle it in payment_intent.succeeded webhook
+                            // 3. Use the session ID as the payment reference
+                        }
+
                         var paymentType = session.Metadata.GetValueOrDefault("paymentType", "appointment");
+                        _logger.LogInformation("Payment type: {PaymentType}", paymentType);
 
                         if (paymentType == "appointment")
                         {
+                            _logger.LogInformation("Processing appointment booking");
+
                             // Handle appointment booking
                             var providerId = Guid.Parse(session.Metadata["providerId"]);
                             var customerId = session.Metadata["customerId"];
                             var appointmentId = Guid.Parse(session.Metadata["appointmentId"]);
 
-                            var bookingCommand = new BookingCommand(providerId, customerId, session.PaymentIntentId, appointmentId);
+                            _logger.LogInformation("Booking details - Provider: {ProviderId}, Customer: {CustomerId}, Appointment: {AppointmentId}, PaymentIntentId: {PaymentIntentId}",
+                                providerId, customerId, appointmentId, paymentIntentId);
+
+                            var bookingCommand = new BookingCommand(providerId, customerId, paymentIntentId, appointmentId);
                             await _mediator.Send(bookingCommand);
+
+                            _logger.LogInformation("Appointment booking completed successfully");
                         }
                         else if (paymentType == "service")
                         {
+                            _logger.LogInformation("Processing service order");
+
                             // Handle service order
                             var serviceId = Guid.Parse(session.Metadata["serviceId"]);
                             var customerId = session.Metadata["customerId"];
                             var customerNotes = session.Metadata.GetValueOrDefault("customerNotes");
 
+                            _logger.LogInformation("Service order details - Service: {ServiceId}, Customer: {CustomerId}, PaymentIntentId: {PaymentIntentId}",
+                                serviceId, customerId, paymentIntentId);
+
                             var orderDto = new CreateServiceOrderDto(serviceId, customerNotes);
-                            var orderCommand = new CreateServiceOrderCommand(customerId, orderDto, session.PaymentIntentId);
+                            var orderCommand = new CreateServiceOrderCommand(customerId, orderDto, paymentIntentId);
                             await _mediator.Send(orderCommand);
+
+                            _logger.LogInformation("Service order completed successfully");
                         }
                     }
+                    else
+                    {
+                        _logger.LogWarning("Session payment status is not 'paid'. Status: {PaymentStatus}", session.PaymentStatus);
+                    }
+                }
+                else if (stripeEvent.Type == "payment_intent.succeeded")
+                {
+                    _logger.LogInformation("Processing payment_intent.succeeded event as backup");
+
+                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                    _logger.LogInformation("PaymentIntent succeeded - ID: {PaymentIntentId}, Status: {Status}",
+                        paymentIntent.Id, paymentIntent.Status);
+
+                    // This could be used as a backup to update bookings that were created with session fallback IDs
+                    // Implementation depends on your specific requirements
+                }
+                else
+                {
+                    _logger.LogInformation("Webhook event type {EventType} not handled", stripeEvent.Type);
                 }
 
+                _logger.LogInformation("Webhook processing completed successfully");
                 return Ok();
             }
             catch (StripeException e)
             {
+                _logger.LogError(e, "Stripe exception occurred while processing webhook: {Message}", e.Message);
                 return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Unexpected error occurred while processing webhook: {Message}", e.Message);
+                return StatusCode(500, "Internal server error");
             }
         }
 
