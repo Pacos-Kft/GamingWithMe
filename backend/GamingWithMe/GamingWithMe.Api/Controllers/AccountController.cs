@@ -60,25 +60,26 @@ namespace GamingWithMe.Api.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            if (user == null /*|| !(await _userManager.IsEmailConfirmedAsync(user))*/)
             {
                 // Don't reveal that the user does not exist or is not confirmed
                 return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
+                //return Ok("hiba1.");
+
             }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
             // Get frontend URL from configuration
-            var frontendUrl = /*_configuration["Frontend:BaseUrl"] ??*/ "https://localhost:7019";
-            var resetLink = $"http://localhost:7091/reset-password?email={Uri.EscapeDataString(user.Email)}&token={encodedToken}";
+            var frontendUrl = /*_configuration["Frontend:BaseUrl"] ??*/ "https://localhost:7091";
+            var resetLink = $"https://localhost:5173/reset-password?email={Uri.EscapeDataString(user.Email)}&token={encodedToken}";
 
 
             var emailVariables = new Dictionary<string, string>
             {
-                { "user_email", user.Email },
                 { "reset_link", resetLink },
-                { "username", user.UserName ?? user.Email }
+                {"request_time", DateTime.UtcNow.ToString() }
             };
 
             try
@@ -96,6 +97,7 @@ namespace GamingWithMe.Api.Controllers
                 // Log the error but don't reveal it to the user
                 // You should add proper logging here
                 Console.WriteLine($"Failed to send password reset email: {ex.Message}");
+                //return BadRequest(ex.Message);
             }
 
             return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
