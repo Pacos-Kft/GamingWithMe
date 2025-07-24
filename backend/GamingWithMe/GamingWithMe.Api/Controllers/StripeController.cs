@@ -138,7 +138,7 @@ namespace GamingWithMe.Api.Controllers
                     if (szervice.Status != ServiceStatus.Active)
                         return BadRequest("Service is not available");
 
-                    price = szervice.Price;
+                    price = szervice.Price*100;
                     productName = szervice.Title;
                 }
                 else
