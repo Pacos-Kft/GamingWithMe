@@ -78,7 +78,7 @@ namespace GamingWithMe.Application.Handlers
                     { "customer_name", customer.Username },
                     { "service_title", service.Title },
                     { "service_description", service.Description },
-                    { "price", (service.Price / 100m).ToString("C") },
+                    { "price", (service.Price).ToString() },
                     { "order_date", order.OrderDate.ToString("MMMM dd, yyyy") },
                     { "delivery_deadline", order.DeliveryDeadline.ToString("MMMM dd, yyyy") },
                     { "customer_notes", order.CustomerNotes ?? "No special notes" },
