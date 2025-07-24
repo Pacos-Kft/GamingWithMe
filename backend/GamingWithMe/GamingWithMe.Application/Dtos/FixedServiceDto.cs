@@ -13,7 +13,13 @@ namespace GamingWithMe.Application.Dtos
         string Username,
         string AvatarUrl,
         DateTime CreatedAt
-    );
+    )
+    {
+        
+        public FixedServiceDto() : this(Guid.Empty, string.Empty, string.Empty, 0, ServiceDeadline.OneDay, ServiceStatus.Active, string.Empty, string.Empty, default)
+        {
+        }
+    };
 
     public record CreateFixedServiceDto(
         string Title,
@@ -41,5 +47,10 @@ namespace GamingWithMe.Application.Dtos
     public record CreateServiceOrderDto(
         Guid ServiceId,
         string? CustomerNotes = null
+    );
+
+    public record UpdateServiceOrderStatusDto(
+        OrderStatus Status,
+        string? ProviderNotes = null
     );
 }
