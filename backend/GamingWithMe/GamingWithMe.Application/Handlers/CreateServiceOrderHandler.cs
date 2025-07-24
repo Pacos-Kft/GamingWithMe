@@ -32,7 +32,7 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<Guid> Handle(CreateServiceOrderCommand request, CancellationToken cancellationToken)
         {
-            var customer = (await _userRepository.ListAsync(cancellationToken))
+            var customer = (await _userRepository.ListAsync(cancellationToken, x=> x.IdentityUser))
                 .FirstOrDefault(u => u.UserId == request.CustomerId);
 
             if (customer == null)
