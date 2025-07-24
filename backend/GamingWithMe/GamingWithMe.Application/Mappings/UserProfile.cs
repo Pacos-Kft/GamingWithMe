@@ -36,6 +36,7 @@ namespace GamingWithMe.Application.Mappings
             CreateMap<UserAvailability, AvailabilitySlotDto>()
                 .ForMember(d => d.StartTime, opt => opt.MapFrom(src => src.StartTime.ToString(@"hh\:mm")))
                 .ForMember(d => d.EndTime, opt => opt.MapFrom(src => src.StartTime.Add(src.Duration).ToString(@"hh\:mm")));
+
         }
     }
 }
