@@ -59,6 +59,7 @@ namespace GamingWithMe.Api.Controllers
         private readonly IAsyncRepository<FixedService> _serviceRepo;
         private readonly ILogger<StripeController> _logger;
 
+
         public StripeController(IOptions<StripeModel> model, TokenService token, CustomerService customer, ChargeService charge, ProductService product, IMediator mediator, IAsyncRepository<IdentityUser> repo, IAsyncRepository<User> gamerRepo, PriceService priceService, IAsyncRepository<Domain.Entities.Discount> discountRepo, IAsyncRepository<FixedService> serviceRepo, ILogger<StripeController> logger)
         {
             _model = model.Value;
@@ -578,6 +579,111 @@ namespace GamingWithMe.Api.Controllers
                 ConnectedAccountId = account.Id
             });
         }
+
+        [HttpGet("connected-account-link")]
+        [Authorize]
+        public async Task<IActionResult> GetConnectedAccountLink([FromQuery] string type = "onboarding")
+        {
+            StripeConfiguration.ApiKey = _model.SecretKey;
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x => x.UserId == userId);
+
+            if (user == null || string.IsNullOrEmpty(user.StripeAccount))
+            {
+                return BadRequest("User has no connected Stripe account.");
+            }
+
+            try
+            {
+                var accountLinkOptions = new AccountLinkCreateOptions
+                {
+                    Account = user.StripeAccount,
+                    RefreshUrl = "https://yourfrontend.com/onboarding/refresh",  // TODO: Update to your actual frontend route
+                    ReturnUrl = "https://yourfrontend.com/dashboard",             // TODO: Update as needed
+                    Type = type == "update" ? "account_update" : "account_onboarding"
+                };
+
+                var accountLinkService = new AccountLinkService();
+                var link = await accountLinkService.CreateAsync(accountLinkOptions);
+
+                return Ok(new
+                {
+                    Url = link.Url,
+                    Type = accountLinkOptions.Type
+                });
+            }
+            catch (StripeException ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
+
+        [HttpGet("is-onboarding-complete")]
+        [Authorize]
+        public async Task<IActionResult> IsOnboardingComplete()
+        {
+            StripeConfiguration.ApiKey = _model.SecretKey;
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x => x.UserId == userId);
+
+            if (user == null || string.IsNullOrEmpty(user.StripeAccount))
+            {
+                return Ok(new { OnboardingComplete = false });
+            }
+
+            try
+            {
+                var accountService = new AccountService();
+                var account = await accountService.GetAsync(user.StripeAccount);
+
+                return Ok(new
+                {
+                    OnboardingComplete = account.DetailsSubmitted
+                });
+            }
+            catch (StripeException ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
+
+
+        [HttpGet("connected-account-remediation-link")]
+        [Authorize]
+        public async Task<IActionResult> GetRemediationLink()
+        {
+            StripeConfiguration.ApiKey = _model.SecretKey;
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x => x.UserId == userId);
+
+            if (user == null || string.IsNullOrEmpty(user.StripeAccount))
+            {
+                return BadRequest("User has no connected Stripe account.");
+            }
+
+            var accountLinkOptions = new AccountLinkCreateOptions
+            {
+                Account = user.StripeAccount,
+                RefreshUrl = "https://yourfrontend.com/onboarding/refresh",
+                ReturnUrl = "https://yourfrontend.com/dashboard",
+                Type = "account_onboarding" // This covers onboarding + remediation
+            };
+
+            var accountLinkService = new AccountLinkService();
+            var link = await accountLinkService.CreateAsync(accountLinkOptions);
+
+            return Ok(new
+            {
+                Url = link.Url
+            });
+        }
+
+
+
+
 
         [HttpPost("create-coupon")]
         [Authorize]
