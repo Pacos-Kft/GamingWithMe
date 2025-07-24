@@ -118,6 +118,31 @@ namespace GamingWithMe.Api.Controllers
             return Ok(orders);
         }
 
+        [HttpPut("orders/{orderId}/status")]
+        [Authorize]
+        public async Task<IActionResult> UpdateOrderStatus(Guid orderId, [FromBody] UpdateServiceOrderStatusDto updateDto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var success = await _mediator.Send(new UpdateServiceOrderStatusCommand(
+                    orderId, userId, updateDto.Status, updateDto.ProviderNotes));
+                
+                if (!success)
+                    return NotFound("Service order not found");
+
+                return Ok(new { 
+                    Message = "Service order status updated successfully",
+                    Status = updateDto.Status.ToString(),
+                    CompletedDate = updateDto.Status == OrderStatus.Completed ? DateTime.UtcNow : (DateTime?)null
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         private string GetUserId()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
