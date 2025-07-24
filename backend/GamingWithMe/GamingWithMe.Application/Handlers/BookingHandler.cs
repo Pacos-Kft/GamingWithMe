@@ -104,7 +104,7 @@ namespace GamingWithMe.Application.Handlers
                     { "appointment_time", appointmentDateTime.ToString("HH:mm") },
                     { "appointment_end_time", endDateTime.ToString("HH:mm") },
                     { "duration", appointment.Duration.ToString(@"hh\:mm") },
-                    { "price", (appointment.Price / 100m).ToString("C") },
+                    { "price", (appointment.Price).ToString() },
                     { "booking_id", booking.Id.ToString() }
                 };
 
