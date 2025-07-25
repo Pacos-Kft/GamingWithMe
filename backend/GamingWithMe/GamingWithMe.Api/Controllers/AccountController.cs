@@ -278,63 +278,7 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        [HttpGet("login/facebook")]
-        public IActionResult FacebookLogin([FromQuery] string returnUrl = "/")
-        {
-            var redirectUrl = Url.Action("FacebookResponse", "Account", new { ReturnUrl = returnUrl });
-            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
-            return Challenge(properties, FacebookDefaults.AuthenticationScheme);
-        }
-
-        [HttpGet("login/facebook/callback")]
-        public async Task<IActionResult> FacebookResponse([FromQuery] string returnUrl)
-        {
-            var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-
-            if (!authenticateResult.Succeeded)
-            {
-                return BadRequest("Facebook authentication failed.");
-            }
-
-            var claims = authenticateResult.Principal.Claims;
-            var facebookId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-
-            if (string.IsNullOrEmpty(facebookId) || string.IsNullOrEmpty(email))
-            {
-                return BadRequest("Required claims missing from Facebook authentication.");
-            }
-
-            try
-            {
-                var command = new FacebookLoginCommand
-                {
-                    FacebookId = facebookId,
-                    Email = email,
-                    FullName = fullName ?? email
-                };
-
-                var userDto = await _mediator.Send(command);
-
-                if (userDto == null)
-                {
-                    return BadRequest("Failed to process Facebook login.");
-                }
-
-                var identityUser = await _userManager.FindByEmailAsync(email);
-                if (identityUser != null)
-                {
-                    await _signInManager.SignInAsync(identityUser, isPersistent: false);
-                }
-
-                return Redirect("https://localhost:5173");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Facebook login failed: {ex.Message}");
-            }
-        }
+       
 
         private void ValidatePassword(string password)
         {
