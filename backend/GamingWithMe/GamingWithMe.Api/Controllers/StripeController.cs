@@ -786,5 +786,92 @@ namespace GamingWithMe.Api.Controllers
                 return Ok(new { Valid = false, Message = "Error validating coupon" });
             }
         }
+
+        [HttpGet("my-coupons")]
+        [Authorize]
+        public async Task<IActionResult> GetMyCoupons()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (userId == null)
+                {
+                    return BadRequest("User not found");
+                }
+
+                var user = (await _gamerRepo.ListAsync()).FirstOrDefault(x => x.UserId == userId);
+
+                if (user == null)
+                {
+                    return BadRequest("User not found");
+                }
+
+                // Get user's discounts from local database
+                var userDiscounts = (await _discountRepo.ListAsync())
+                    .Where(d => d.UserId == user.Id)
+                    .ToList();
+
+                if (!userDiscounts.Any())
+                {
+                    return Ok(new { Coupons = new List<object>() });
+                }
+
+                // Validate each coupon with Stripe and prepare response
+                StripeConfiguration.ApiKey = _model.SecretKey;
+                var couponService = new CouponService();
+                var coupons = new List<object>();
+
+                foreach (var discount in userDiscounts)
+                {
+                    try
+                    {
+                        var stripeCoupon = await couponService.GetAsync(discount.StripeId);
+                        
+                        coupons.Add(new
+                        {
+                            Id = discount.Id,
+                            StripeId = discount.StripeId,
+                            Name = discount.Name,
+                            PercentOff = discount.PercentOff,
+                            Duration = discount.Duration,
+                            MaxRedemptions = discount.MaxRedemptions,
+                            Valid = stripeCoupon?.Valid ?? false,
+                            ExpiresAt = stripeCoupon?.RedeemBy,
+                            TimesRedeemed = stripeCoupon?.TimesRedeemed ?? 0,
+                            Created = stripeCoupon?.Created
+                        });
+                    }
+                    catch (StripeException)
+                    {
+                        // If Stripe coupon doesn't exist or there's an error, still include it but mark as invalid
+                        coupons.Add(new
+                        {
+                            Id = discount.Id,
+                            StripeId = discount.StripeId,
+                            Name = discount.Name,
+                            PercentOff = discount.PercentOff,
+                            Duration = discount.Duration,
+                            MaxRedemptions = discount.MaxRedemptions,
+                            Valid = false,
+                            ExpiresAt = (DateTime?)null,
+                            TimesRedeemed = 0,
+                            Created = (DateTime?)null,
+                            Error = "Coupon not found in Stripe"
+                        });
+                    }
+                }
+
+                return Ok(new
+                {
+                    Coupons = coupons,
+                    TotalCount = coupons.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = $"Error retrieving coupons: {ex.Message}" });
+            }
+        }
     }
 }

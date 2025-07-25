@@ -89,33 +89,16 @@ builder.Services.AddAuthentication()
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
         options.SignInScheme = IdentityConstants.ExternalScheme;
         options.SaveTokens = true;
-        
+
         // Configure correlation cookie
         options.CorrelationCookie.Name = "gamingwithme.correlation";
         options.CorrelationCookie.SameSite = SameSiteMode.None;
         options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
         options.CorrelationCookie.HttpOnly = true;
         options.CorrelationCookie.IsEssential = true;
-        
+
         // Add callback path explicitly
         options.CallbackPath = "/signin-google";
-    })
-    .AddFacebook(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Facebook:ClientId"];
-        options.ClientSecret = builder.Configuration["Authentication:Facebook:ClientSecret"];
-        options.SignInScheme = IdentityConstants.ExternalScheme;
-        options.SaveTokens = true;
-        
-        // Configure correlation cookie
-        options.CorrelationCookie.Name = "gamingwithme.facebook.correlation";
-        options.CorrelationCookie.SameSite = SameSiteMode.None;
-        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.CorrelationCookie.HttpOnly = true;
-        options.CorrelationCookie.IsEssential = true;
-        
-        // Add callback path explicitly
-        options.CallbackPath = "/signin-facebook";
     });
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingHandler>());

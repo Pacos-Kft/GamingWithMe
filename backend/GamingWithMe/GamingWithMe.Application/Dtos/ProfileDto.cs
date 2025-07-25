@@ -14,13 +14,15 @@ namespace GamingWithMe.Application.Dtos
         List<string> tags,
         bool hasStripeAccount,        
         List<AvailabilitySlotDto> availability, 
-        DateTime joined
-
+        DateTime joined,
+        string? twitterUrl,
+    string? instagramUrl,
+    string? facebookUrl
 
 
     )
     {
-        public ProfileDto() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, new List<string>(), new List<string>(), new List<string>(), false, new List<AvailabilitySlotDto>(), default) { }
+        public ProfileDto() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, new List<string>(), new List<string>(), new List<string>(), false, new List<AvailabilitySlotDto>(), default, string.Empty, string.Empty, string.Empty) { }
     }
 
     
