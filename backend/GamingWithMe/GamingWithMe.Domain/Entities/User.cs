@@ -20,6 +20,11 @@ namespace GamingWithMe.Domain.Entities
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
 
+        // Social Media Links
+        public string? TwitterUrl { get; set; }
+        public string? InstagramUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+
         // Existing collections
         public ICollection<Booking> Bookings { get; set; }
         public ICollection<UserLanguage> Languages { get; set; }
@@ -60,6 +65,9 @@ namespace GamingWithMe.Domain.Entities
             FacebookId = "";
             StripeAccount = "";
             StripeCustomer = "";
+            TwitterUrl = "";
+            InstagramUrl = "";
+            FacebookUrl = "";
         }
 
         // Helper method to check if user is in gaming category - fixed to handle null Tag navigation properties

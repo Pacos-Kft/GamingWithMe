@@ -258,6 +258,94 @@ namespace GamingWithMe.Api.Controllers
             return removed ? Ok(true) : BadRequest("Failed to remove tag");
         }
 
+        [HttpPut("social-media")]
+        public async Task<IActionResult> UpdateSocialMedia([FromBody] UpdateSocialMediaDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var result = await _mediator.Send(new UpdateSocialMediaCommand(
+                    userId,
+                    dto.TwitterUrl,
+                    dto.InstagramUrl,
+                    dto.FacebookUrl));
+
+                return result ? Ok("Social media links updated successfully.") : NotFound("User not found.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Failed to update social media links: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("social-media/{platform}")]
+        public async Task<IActionResult> DeleteSocialMediaLink(string platform)
+        {
+            try
+            {
+                var userId = GetUserId();
+
+                // Create command with only the specified platform cleared
+                var result = platform.ToLower() switch
+                {
+                    "twitter" or "x" => await _mediator.Send(new UpdateSocialMediaCommand(userId, null, null, null)),
+                    "instagram" => await _mediator.Send(new UpdateSocialMediaCommand(userId, null, null, null)),
+                    "facebook" => await _mediator.Send(new UpdateSocialMediaCommand(userId, null, null, null)),
+                    _ => false
+                };
+
+                // For individual deletion, we need a more specific approach
+                var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
+                if (user == null) return NotFound("User not found.");
+
+                switch (platform.ToLower())
+                {
+                    case "twitter":
+                    case "x":
+                        user.TwitterUrl = null;
+                        break;
+                    case "instagram":
+                        user.InstagramUrl = null;
+                        break;
+                    case "facebook":
+                        user.FacebookUrl = null;
+                        break;
+                    default:
+                        return BadRequest("Invalid platform. Use 'twitter', 'instagram', or 'facebook'.");
+                }
+
+                await _userRepository.Update(user);
+                return Ok($"{platform} link deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Failed to delete {platform} link: {ex.Message}");
+            }
+        }
+
+        [HttpGet("social-media")]
+        public async Task<IActionResult> GetSocialMediaLinks()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
+
+                if (user == null) return NotFound("User not found.");
+
+                return Ok(new
+                {
+                    TwitterUrl = user.TwitterUrl,
+                    InstagramUrl = user.InstagramUrl,
+                    FacebookUrl = user.FacebookUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Failed to retrieve social media links: {ex.Message}");
+            }
+        }
+
 
         private string GetUserId()
         {

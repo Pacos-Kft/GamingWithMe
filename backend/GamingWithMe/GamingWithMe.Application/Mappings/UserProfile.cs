@@ -28,7 +28,10 @@ namespace GamingWithMe.Application.Mappings
                         a.Id, a.Date, a.StartTime.ToString(@"hh\:mm"), 
                         a.StartTime.Add(a.Duration).ToString(@"hh\:mm"), a.IsAvailable
                     )).ToList()))
-                .ForMember(d => d.joined, opt => opt.MapFrom(src => src.CreatedAt));
+                .ForMember(d => d.joined, opt => opt.MapFrom(src => src.CreatedAt))
+                .ForMember(d => d.twitterUrl, opt => opt.MapFrom(src => src.TwitterUrl))
+                .ForMember(d => d.instagramUrl, opt => opt.MapFrom(src => src.InstagramUrl))
+                .ForMember(d => d.facebookUrl, opt => opt.MapFrom(src => src.FacebookUrl));
             
             CreateMap<Booking, BookingSummaryDto>()
                 .ForMember(d => d.CustomerName, opt => opt.MapFrom(src => src.Customer.Username));
