@@ -20,6 +20,8 @@ namespace GamingWithMe.Domain.Entities
         public TimeSpan Duration { get; set; }
         public DateTime CreatedAt { get; set; }
         public string PaymentIntentId { get; set; }
+        public decimal Amount { get; set; }
+        public Guid? UserAvailabilityId { get; set; }
 
         public Booking()
         {
