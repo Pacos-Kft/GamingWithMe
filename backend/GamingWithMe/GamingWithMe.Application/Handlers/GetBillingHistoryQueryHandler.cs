@@ -15,13 +15,16 @@ namespace GamingWithMe.Application.Handlers
     {
         private readonly IAsyncRepository<User> _userRepository;
         private readonly IAsyncRepository<Booking> _bookingRepository;
-        private readonly IAsyncRepository<UserAvailability> _availabilityRepository;
+        private readonly IAsyncRepository<ServiceOrder> _serviceOrderRepository;
 
-        public GetBillingHistoryQueryHandler(IAsyncRepository<User> userRepository, IAsyncRepository<Booking> bookingRepository, IAsyncRepository<UserAvailability> availabilityRepository)
+        public GetBillingHistoryQueryHandler(
+            IAsyncRepository<User> userRepository, 
+            IAsyncRepository<Booking> bookingRepository,
+            IAsyncRepository<ServiceOrder> serviceOrderRepository)
         {
             _userRepository = userRepository;
             _bookingRepository = bookingRepository;
-            _availabilityRepository = availabilityRepository;
+            _serviceOrderRepository = serviceOrderRepository;
         }
 
         public async Task<List<BillingRecordDto>> Handle(GetBillingHistoryQuery request, CancellationToken cancellationToken)
@@ -29,42 +32,73 @@ namespace GamingWithMe.Application.Handlers
             var user = (await _userRepository.ListAsync(cancellationToken)).FirstOrDefault(u => u.UserId == request.UserId);
             if (user == null) return new List<BillingRecordDto>();
 
-            var bookings = await _bookingRepository.ListAsync(cancellationToken, b => b.Provider, b => b.Customer);
-            var userAvailabilities = await _availabilityRepository.ListAsync(cancellationToken);
-            var userAvailabilityDict = userAvailabilities.ToDictionary(ua => ua.Id);
-
             var billingHistory = new List<BillingRecordDto>();
 
-            var paidBookings = bookings.Where(b => b.CustomerId == user.Id && b.StartTime <= DateTime.UtcNow);
+            // Get past bookings where this user was involved
+            var bookings = await _bookingRepository.ListAsync(cancellationToken, b => b.Provider, b => b.Customer);
+            var pastBookings = bookings.Where(b => b.StartTime <= DateTime.UtcNow).ToList();
+
+            // Bookings where user was the customer (outgoing - paid out)
+            var paidBookings = pastBookings.Where(b => b.CustomerId == user.Id);
             foreach (var booking in paidBookings)
             {
-                if (userAvailabilityDict.TryGetValue(booking.Id, out var availability))
-                {
-                    billingHistory.Add(new BillingRecordDto(
-                        booking.Id,
-                        booking.StartTime,
-                        availability.Price,
-                        "Paid",
-                        booking.Provider.Username,
-                        booking.Provider.AvatarUrl
-                    ));
-                }
+                billingHistory.Add(new BillingRecordDto(
+                    booking.Id,
+                    booking.StartTime,
+                    booking.Amount, // Use the actual amount stored in booking
+                    "Paid",
+                    booking.Provider.Username,
+                    booking.Provider.AvatarUrl
+                ));
             }
 
-            var receivedBookings = bookings.Where(b => b.ProviderId == user.Id && b.StartTime <= DateTime.UtcNow);
+            // Bookings where user was the provider (incoming - received payment)
+            var receivedBookings = pastBookings.Where(b => b.ProviderId == user.Id);
             foreach (var booking in receivedBookings)
             {
-                if (userAvailabilityDict.TryGetValue(booking.Id, out var availability))
-                {
-                    billingHistory.Add(new BillingRecordDto(
-                        booking.Id,
-                        booking.StartTime,
-                        availability.Price,
-                        "Received",
-                        booking.Customer.Username,
-                        booking.Customer.AvatarUrl
-                    ));
-                }
+                billingHistory.Add(new BillingRecordDto(
+                    booking.Id,
+                    booking.StartTime,
+                    booking.Amount, // Use the actual amount stored in booking
+                    "Received",
+                    booking.Customer.Username,
+                    booking.Customer.AvatarUrl
+                ));
+            }
+
+            // Get completed or cancelled service orders
+            var serviceOrders = await _serviceOrderRepository.ListAsync(cancellationToken, 
+                so => so.Service, so => so.Customer, so => so.Provider);
+            var completedOrders = serviceOrders.Where(so => 
+                so.Status == OrderStatus.Completed || 
+                so.Status == OrderStatus.Cancelled).ToList();
+
+            // Service orders where user was the customer (outgoing - paid out)
+            var paidOrders = completedOrders.Where(so => so.CustomerId == user.Id);
+            foreach (var order in paidOrders)
+            {
+                billingHistory.Add(new BillingRecordDto(
+                    order.Id,
+                    order.OrderDate,
+                    order.Service.Price, // Use the service price
+                    "Paid",
+                    order.Provider.Username,
+                    order.Provider.AvatarUrl
+                ));
+            }
+
+            // Service orders where user was the provider (incoming - received payment)
+            var receivedOrders = completedOrders.Where(so => so.ProviderId == user.Id);
+            foreach (var order in receivedOrders)
+            {
+                billingHistory.Add(new BillingRecordDto(
+                    order.Id,
+                    order.OrderDate,
+                    order.Service.Price, // Use the service price
+                    "Received",
+                    order.Customer.Username,
+                    order.Customer.AvatarUrl
+                ));
             }
 
             return billingHistory.OrderByDescending(b => b.TransactionDate).ToList();

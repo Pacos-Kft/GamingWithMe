@@ -232,6 +232,15 @@ namespace GamingWithMe.Api.Controllers
             return Ok(availability);
         }
 
+        [HttpGet("{username}/daily-availability/{date}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserDailyAvailability(string username, DateTime date)
+        {
+            var availability = await _mediator.Send(new GetUserDailyAvailabilityByUsernameQuery(username, date));
+
+            return Ok(availability);
+        }
+
         [HttpDelete("daily-availability/{date}/{startTime}")]
         public async Task<IActionResult> DeleteDailyAvailability(DateTime date, string startTime)
         {

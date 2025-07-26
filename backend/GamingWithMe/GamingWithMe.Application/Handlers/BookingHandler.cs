@@ -63,7 +63,11 @@ namespace GamingWithMe.Application.Handlers
 
             var start = appointment.Date.Add(appointment.StartTime);
 
-            var booking = new Booking(provider.Id, customer.Id, start, appointment.Duration, request.PaymentIntentId);
+            var booking = new Booking(provider.Id, customer.Id, start, appointment.Duration, request.PaymentIntentId)
+            {
+                Amount = appointment.Price,  
+                UserAvailabilityId = appointment.Id  
+            };
 
             await _bookingrepo.AddAsync(booking);
             _logger.LogInformation("Booking {BookingId} created successfully", booking.Id);
