@@ -26,7 +26,7 @@ namespace GamingWithMe.Application.Mappings
                 .ForMember(d => d.availability, 
                     opt => opt.MapFrom(src => src.DailyAvailability.Select(a => new AvailabilitySlotDto(
                         a.Id, a.Date, a.StartTime.ToString(@"hh\:mm"), 
-                        a.StartTime.Add(a.Duration).ToString(@"hh\:mm"), a.IsAvailable
+                        a.StartTime.Add(a.Duration).ToString(@"hh\:mm"), a.IsAvailable, a.Price
                     )).ToList()))
                 .ForMember(d => d.joined, opt => opt.MapFrom(src => src.CreatedAt))
                 .ForMember(d => d.twitterUrl, opt => opt.MapFrom(src => src.TwitterUrl))
