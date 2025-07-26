@@ -48,7 +48,8 @@ namespace GamingWithMe.Application.Handlers
                 slot.Date,
                 slot.StartTime.ToString(@"hh\:mm"),
                 slot.StartTime.Add(slot.Duration).ToString(@"hh\:mm"),
-                slot.IsAvailable
+                slot.IsAvailable,
+                slot.Price
             )).ToList();
         }
     }
