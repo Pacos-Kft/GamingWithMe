@@ -7,6 +7,7 @@ namespace GamingWithMe.Application.Dtos
         DateTime Date,
         string StartTime,
         string EndTime,
-        bool IsAvailable
+        bool IsAvailable,
+        long Price
     );
 }   
