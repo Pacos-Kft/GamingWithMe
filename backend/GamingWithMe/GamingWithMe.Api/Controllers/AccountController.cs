@@ -60,18 +60,15 @@ namespace GamingWithMe.Api.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user == null /*|| !(await _userManager.IsEmailConfirmedAsync(user))*/)
+            if (user == null)
             {
-                // Don't reveal that the user does not exist or is not confirmed
                 return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
-                //return Ok("hiba1.");
 
             }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            // Get frontend URL from configuration
             var frontendUrl = /*_configuration["Frontend:BaseUrl"] ??*/ "https://localhost:7091";
             var resetLink = $"https://localhost:5173/reset-password?email={Uri.EscapeDataString(user.Email)}&token={encodedToken}";
 
@@ -84,20 +81,16 @@ namespace GamingWithMe.Api.Controllers
 
             try
             {
-                // Replace with your actual Mailjet template ID for password reset
                 await _emailService.SendEmailAsync(
                     user.Email,
                     "Reset Your Password - GamingWithMe",
-                    7178587, // Replace with your actual template ID
+                    7178587, 
                     emailVariables
                 );
             }
             catch (Exception ex)
             {
-                // Log the error but don't reveal it to the user
-                // You should add proper logging here
                 Console.WriteLine($"Failed to send password reset email: {ex.Message}");
-                //return BadRequest(ex.Message);
             }
 
             return Ok("If an account with this email exists and is confirmed, a password reset link has been sent.");
@@ -109,11 +102,9 @@ namespace GamingWithMe.Api.Controllers
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
             {
-                // Don't reveal that the user does not exist
                 return BadRequest("Error resetting password.");
             }
 
-            // Validate the new password before attempting reset
             try
             {
                 ValidatePassword(dto.NewPassword);
@@ -128,7 +119,6 @@ namespace GamingWithMe.Api.Controllers
 
             if (result.Succeeded)
             {
-                // Send confirmation email that password was reset
                 try
                 {
                     var emailVariables = new Dictionary<string, string>
@@ -141,20 +131,18 @@ namespace GamingWithMe.Api.Controllers
                     await _emailService.SendEmailAsync(
                         user.Email,
                         "Password Reset Successful - GamingWithMe",
-                        6048163, // Replace with your actual template ID for password reset confirmation
+                        6048163, 
                         emailVariables
                     );
                 }
                 catch (Exception ex)
                 {
-                    // Log but don't fail the request
                     Console.WriteLine($"Failed to send password reset confirmation email: {ex.Message}");
                 }
 
                 return Ok("Password has been reset successfully.");
             }
 
-            // Provide more specific error information
             var errors = result.Errors.Select(e => e.Description);
             return BadRequest(new
             {

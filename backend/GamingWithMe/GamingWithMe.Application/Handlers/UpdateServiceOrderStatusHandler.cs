@@ -35,7 +35,6 @@ namespace GamingWithMe.Application.Handlers
             _logger.LogInformation("Processing service order status update for Order: {OrderId}, Provider: {ProviderId}, Status: {Status}",
                 request.OrderId, request.ProviderId, request.Status);
 
-            // Get the service order with related entities
             var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken, 
                 o => o.Service, o => o.Customer, o => o.Provider, o => o.Customer.IdentityUser, o => o.Provider.IdentityUser);
 
@@ -45,22 +44,18 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("Service order not found");
             }
 
-            // Verify that the user is the provider of this service order
             if (order.Provider.UserId != request.ProviderId)
             {
                 _logger.LogError("User {ProviderId} is not authorized to update order {OrderId}", request.ProviderId, request.OrderId);
                 throw new InvalidOperationException("You are not authorized to update this service order");
             }
 
-            // Validate status transitions
             ValidateStatusTransition(order.Status, request.Status);
 
-            // Update the order status and provider notes
             var previousStatus = order.Status;
             order.Status = request.Status;
             order.ProviderNotes = request.ProviderNotes;
 
-            // Set completed date if status is completed
             if (request.Status == OrderStatus.Completed && order.CompletedDate == null)
             {
                 order.CompletedDate = DateTime.UtcNow;
@@ -68,12 +63,10 @@ namespace GamingWithMe.Application.Handlers
                     request.OrderId, order.CompletedDate);
             }
 
-            // Update the order in database
             await _orderRepository.Update(order);
             _logger.LogInformation("Service order {OrderId} status updated from {PreviousStatus} to {NewStatus}", 
                 request.OrderId, previousStatus, request.Status);
 
-            // Send notification emails
             await SendStatusUpdateEmails(order, previousStatus);
 
             return true;
@@ -81,14 +74,13 @@ namespace GamingWithMe.Application.Handlers
 
         private void ValidateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus)
         {
-            // Define allowed status transitions
             var allowedTransitions = new Dictionary<OrderStatus, OrderStatus[]>
             {
                 { OrderStatus.Pending, new[] { OrderStatus.InProgress, OrderStatus.Cancelled } },
                 { OrderStatus.InProgress, new[] { OrderStatus.Completed, OrderStatus.Cancelled } },
-                { OrderStatus.Completed, new OrderStatus[0] }, // No transitions allowed from completed
-                { OrderStatus.Cancelled, new OrderStatus[0] }, // No transitions allowed from cancelled
-                { OrderStatus.Refunded, new OrderStatus[0] } // No transitions allowed from refunded
+                { OrderStatus.Completed, new OrderStatus[0] },
+                { OrderStatus.Cancelled, new OrderStatus[0] }, 
+                { OrderStatus.Refunded, new OrderStatus[0] }
             };
 
             if (!allowedTransitions.ContainsKey(currentStatus))
@@ -142,7 +134,6 @@ namespace GamingWithMe.Application.Handlers
                     { "completed_date", order.CompletedDate?.ToString("MMMM dd, yyyy HH:mm") ?? "Not completed" }
                 };
 
-                // Send email to customer
                 var subject = order.Status switch
                 {
                     OrderStatus.InProgress => "Service Order In Progress",
@@ -151,12 +142,11 @@ namespace GamingWithMe.Application.Handlers
                     _ => "Service Order Status Update"
                 };
 
-                // Use different template IDs based on status
                 var templateId = order.Status switch
                 {
-                    OrderStatus.Completed => 7178620, // Template for completion notification
-                    OrderStatus.Cancelled => 7178621, // Template for cancellation notification
-                    _ => 7178619 // General status update template
+                    OrderStatus.Completed => 7178620, 
+                    OrderStatus.Cancelled => 7178621,
+                    _ => 7178619 
                 };
 
                 //await _emailService.SendEmailAsync(
@@ -173,7 +163,6 @@ namespace GamingWithMe.Application.Handlers
             {
                 _logger.LogError(ex, "Failed to send status update email for order {OrderId}: {Message}",
                     order.Id, ex.Message);
-                // Don't throw - email failure shouldn't prevent status update
             }
         }
     }

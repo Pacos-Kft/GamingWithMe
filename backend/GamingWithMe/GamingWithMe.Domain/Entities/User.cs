@@ -20,12 +20,10 @@ namespace GamingWithMe.Domain.Entities
         public string AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        // Social Media Links
         public string? TwitterUrl { get; set; }
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
 
-        // Existing collections
         public ICollection<Booking> Bookings { get; set; }
         public ICollection<UserLanguage> Languages { get; set; }
         public ICollection<UserAvailability> DailyAvailability { get; set; }
@@ -34,7 +32,6 @@ namespace GamingWithMe.Domain.Entities
         public ICollection<UserTag> Tags { get; set; }
         public ICollection<Discount> Discounts { get; set; }
 
-        // New collections for fixed services
         public ICollection<FixedService> FixedServices { get; set; }
         public ICollection<ServiceOrder> ServiceOrders { get; set; }
         public ICollection<ServiceOrder> ReceivedOrders { get; set; }
@@ -70,7 +67,6 @@ namespace GamingWithMe.Domain.Entities
             FacebookUrl = "";
         }
 
-        // Helper method to check if user is in gaming category - fixed to handle null Tag navigation properties
         public bool IsGamer()
         {
             if (Tags == null || !Tags.Any())
@@ -79,7 +75,6 @@ namespace GamingWithMe.Domain.Entities
             return Tags.Any(ut => ut.Tag != null && ut.Tag.Name.Equals("Gamer", StringComparison.OrdinalIgnoreCase));
         }
 
-        // Helper method to check if user can use booking system
         public bool CanUseBookingSystem()
         {
             return IsGamer();

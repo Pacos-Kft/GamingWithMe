@@ -29,7 +29,6 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("User not found.");
             }
 
-            // Validate username using the new validation service
             UsernameValidationService.ValidateUsername(request.NewUsername);
 
             var existingUser = (await _userRepository.ListAsync(cancellationToken))

@@ -32,14 +32,13 @@ namespace GamingWithMe.Api.Controllers
         public string PriceId { get; set; }
     }
 
-    // Updated payment request to handle both types
     public class PaymentRequest
     {
         public string PaymentType { get; set; } = "appointment"; // "appointment" or "service"
-        public Guid? AppointmentId { get; set; } // For appointment bookings
-        public Guid? ServiceId { get; set; } // For service orders
+        public Guid? AppointmentId { get; set; } 
+        public Guid? ServiceId { get; set; } 
         public string? CouponId { get; set; }
-        public string? CustomerNotes { get; set; } // For service orders
+        public string? CustomerNotes { get; set; }
     }
 
     [Route("api/[controller]")]
@@ -147,7 +146,6 @@ namespace GamingWithMe.Api.Controllers
                     return BadRequest("PaymentType must be either 'appointment' or 'service'");
                 }
 
-                // Calculate fee as 10% of the actual price
                 long applicationFee = (long)(price * 0.10);
 
                 var sessionOptions = new SessionCreateOptions
@@ -178,7 +176,6 @@ namespace GamingWithMe.Api.Controllers
                         {
                             Destination = connectedAccount
                         },
-                        // Add metadata to PaymentIntent as well
                         Metadata = new Dictionary<string, string>
                         {
                             { "paymentType", paymentType },
@@ -186,7 +183,7 @@ namespace GamingWithMe.Api.Controllers
                             { "customerId", userId },
                             { "appointmentId", request.AppointmentId?.ToString() ?? "" },
                             { "serviceId", request.ServiceId?.ToString() ?? "" },
-                            { "sessionId", "" } // Will be populated after session creation
+                            { "sessionId", "" } 
                         }
                     },
                     Metadata = new Dictionary<string, string>
@@ -258,7 +255,6 @@ namespace GamingWithMe.Api.Controllers
                     return BadRequest("Booking cannot be canceled within 1 hour of the appointment.");
                 }
 
-                // 2. Check authorization (only the user who booked or the mentor can refund)
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
                 var isBookedUser = booking.Customer?.UserId == currentUserId;
@@ -267,11 +263,9 @@ namespace GamingWithMe.Api.Controllers
                 if (!isBookedUser && !isGamer)
                     return Forbid("You don't have permission to refund this booking");
 
-                // 3. Check if the booking has a payment ID
                 if (string.IsNullOrEmpty(booking.PaymentIntentId))
                     return BadRequest("No payment information associated with this booking");
 
-                // 4. Create refund via Stripe
                 var refundService = new RefundService();
                 var refundOptions = new RefundCreateOptions
                 {
@@ -281,7 +275,6 @@ namespace GamingWithMe.Api.Controllers
 
                 var refund = await refundService.CreateAsync(refundOptions);
 
-                // 5. Delete the booking
                 await _mediator.Send(new DeleteBookingCommand(bookingId));
 
                 return Ok(new
@@ -311,19 +304,16 @@ namespace GamingWithMe.Api.Controllers
             {
                 StripeConfiguration.ApiKey = _model.SecretKey;
 
-                // 1. Get the service order
                 var order = await _mediator.Send(new GetServiceOrderByIdQuery(orderId));
                 if (order == null)
                     return NotFound("Service order not found");
 
-                // Check if the order can be canceled (within 24 hours of order date or before work starts)
                 var hoursSinceOrder = (DateTime.UtcNow - order.OrderDate).TotalHours;
                 if (hoursSinceOrder > 24 && order.Status != OrderStatus.Pending)
                 {
                     return BadRequest("Service order cannot be canceled after 24 hours or once work has started.");
                 }
 
-                // 2. Check authorization (only the customer or provider can refund)
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
                 var isCustomer = order.Customer?.UserId == currentUserId;
@@ -332,15 +322,12 @@ namespace GamingWithMe.Api.Controllers
                 if (!isCustomer && !isProvider)
                     return Forbid("You don't have permission to refund this service order");
 
-                // 3. Check if the order has a payment ID
                 if (string.IsNullOrEmpty(order.PaymentIntentId))
                     return BadRequest("No payment information associated with this service order");
 
-                // 4. Check if order is already completed
                 if (order.Status == OrderStatus.Completed)
                     return BadRequest("Cannot refund a completed service order");
 
-                // 5. Create refund via Stripe
                 var refundService = new RefundService();
                 var refundOptions = new RefundCreateOptions
                 {
@@ -350,7 +337,6 @@ namespace GamingWithMe.Api.Controllers
 
                 var refund = await refundService.CreateAsync(refundOptions);
 
-                // 6. Update order status to cancelled and delete
                 order.Status = OrderStatus.Cancelled;
                 await _mediator.Send(new DeleteServiceOrderCommand(orderId));
 
@@ -373,7 +359,6 @@ namespace GamingWithMe.Api.Controllers
             }
         }
 
-        // Keep the original refund endpoint for backward compatibility
         [HttpPost("refund/{bookingId}")]
         [Authorize]
         public async Task<IActionResult> RefundPayment(Guid bookingId)
@@ -400,7 +385,6 @@ namespace GamingWithMe.Api.Controllers
                 _logger.LogInformation("Stripe event constructed successfully. Event type: {EventType}, Event ID: {EventId}",
                     stripeEvent.Type, stripeEvent.Id);
 
-                // Handle the event
                 if (stripeEvent.Type == "checkout.session.completed")
                 {
                     _logger.LogInformation("Processing checkout.session.completed event");
@@ -417,7 +401,6 @@ namespace GamingWithMe.Api.Controllers
 
                         string paymentIntentId = null;
 
-                        // Try multiple approaches to get the PaymentIntentId
                         if (!string.IsNullOrEmpty(session.PaymentIntentId))
                         {
                             paymentIntentId = session.PaymentIntentId;
@@ -453,7 +436,6 @@ namespace GamingWithMe.Api.Controllers
                                     _logger.LogError("Expanded session does not contain PaymentIntent. Session mode: {Mode}, Status: {Status}",
                                         expandedSession?.Mode, expandedSession?.Status);
 
-                                    // Log all available properties for debugging
                                     _logger.LogInformation("Session debug info - Mode: {Mode}, Status: {Status}, Amount Total: {AmountTotal}, Customer: {Customer}",
                                         expandedSession?.Mode,
                                         expandedSession?.Status,
@@ -467,21 +449,14 @@ namespace GamingWithMe.Api.Controllers
                             }
                         }
 
-                        // If we still don't have PaymentIntentId, try alternative approaches
                         if (string.IsNullOrEmpty(paymentIntentId))
                         {
                             _logger.LogWarning("Could not retrieve PaymentIntentId through normal methods. Attempting alternative approaches for session {SessionId}", session.Id);
 
-                            // Alternative 1: Use session ID as a temporary identifier and process the booking anyway
-                            // This is a fallback approach - you might want to implement a different strategy
-                            paymentIntentId = $"session_{session.Id}"; // Temporary fallback
+                            paymentIntentId = $"session_{session.Id}"; 
 
                             _logger.LogWarning("Using session-based fallback PaymentIntentId: {PaymentIntentId}", paymentIntentId);
 
-                            // You could also:
-                            // 1. Store this booking with a placeholder and update it later when payment_intent.succeeded fires
-                            // 2. Skip processing now and handle it in payment_intent.succeeded webhook
-                            // 3. Use the session ID as the payment reference
                         }
 
                         var paymentType = session.Metadata.GetValueOrDefault("paymentType", "appointment");
@@ -491,7 +466,6 @@ namespace GamingWithMe.Api.Controllers
                         {
                             _logger.LogInformation("Processing appointment booking");
 
-                            // Handle appointment booking
                             var providerId = Guid.Parse(session.Metadata["providerId"]);
                             var customerId = session.Metadata["customerId"];
                             var appointmentId = Guid.Parse(session.Metadata["appointmentId"]);
@@ -508,7 +482,6 @@ namespace GamingWithMe.Api.Controllers
                         {
                             _logger.LogInformation("Processing service order");
 
-                            // Handle service order
                             var serviceId = Guid.Parse(session.Metadata["serviceId"]);
                             var customerId = session.Metadata["customerId"];
                             var customerNotes = session.Metadata.GetValueOrDefault("customerNotes");
@@ -536,8 +509,6 @@ namespace GamingWithMe.Api.Controllers
                     _logger.LogInformation("PaymentIntent succeeded - ID: {PaymentIntentId}, Status: {Status}",
                         paymentIntent.Id, paymentIntent.Status);
 
-                    // This could be used as a backup to update bookings that were created with session fallback IDs
-                    // Implementation depends on your specific requirements
                 }
                 else
                 {
@@ -599,8 +570,8 @@ namespace GamingWithMe.Api.Controllers
                 var accountLinkOptions = new AccountLinkCreateOptions
                 {
                     Account = user.StripeAccount,
-                    RefreshUrl = "https://yourfrontend.com/onboarding/refresh",  // TODO: Update to your actual frontend route
-                    ReturnUrl = "https://yourfrontend.com/dashboard",             // TODO: Update as needed
+                    RefreshUrl = "https://yourfrontend.com/onboarding/refresh", 
+                    ReturnUrl = "https://yourfrontend.com/dashboard",           
                     Type = type == "update" ? "account_update" : "account_onboarding"
                 };
 
@@ -669,7 +640,7 @@ namespace GamingWithMe.Api.Controllers
                 Account = user.StripeAccount,
                 RefreshUrl = "https://yourfrontend.com/onboarding/refresh",
                 ReturnUrl = "https://yourfrontend.com/dashboard",
-                Type = "account_onboarding" // This covers onboarding + remediation
+                Type = "account_onboarding" 
             };
 
             var accountLinkService = new AccountLinkService();
@@ -705,11 +676,10 @@ namespace GamingWithMe.Api.Controllers
                 {
                     Name = request.Name,
                     PercentOff = (decimal?)request.PercentOff,
-                    Duration = "once", // Can be "forever", "once", or "repeating"
+                    Duration = "once",
                     MaxRedemptions = request.MaxRedemptions
                 };
 
-                // Set expiration if duration in days is provided
                 if (request.DurationInDays > 0)
                 {
                     couponOptions.RedeemBy = DateTime.UtcNow.AddDays(request.DurationInDays);
@@ -750,7 +720,6 @@ namespace GamingWithMe.Api.Controllers
         {
             try
             {
-                // First check our local database for a discount with this name
                 var localDiscount = (await _discountRepo.ListAsync()).FirstOrDefault(x => x.Name.ToLower() == couponName.ToLower());
                 
                 if (localDiscount == null)
@@ -758,7 +727,6 @@ namespace GamingWithMe.Api.Controllers
                     return Ok(new { Valid = false, Message = "Coupon not found" });
                 }
 
-                // Then validate with Stripe using the StripeId
                 StripeConfiguration.ApiKey = _model.SecretKey;
                 var couponService = new CouponService();
                 var coupon = await couponService.GetAsync(localDiscount.StripeId);
@@ -807,7 +775,6 @@ namespace GamingWithMe.Api.Controllers
                     return BadRequest("User not found");
                 }
 
-                // Get user's discounts from local database
                 var userDiscounts = (await _discountRepo.ListAsync())
                     .Where(d => d.UserId == user.Id)
                     .ToList();
@@ -817,7 +784,6 @@ namespace GamingWithMe.Api.Controllers
                     return Ok(new { Coupons = new List<object>() });
                 }
 
-                // Validate each coupon with Stripe and prepare response
                 StripeConfiguration.ApiKey = _model.SecretKey;
                 var couponService = new CouponService();
                 var coupons = new List<object>();
@@ -844,7 +810,6 @@ namespace GamingWithMe.Api.Controllers
                     }
                     catch (StripeException)
                     {
-                        // If Stripe coupon doesn't exist or there's an error, still include it but mark as invalid
                         coupons.Add(new
                         {
                             Id = discount.Id,

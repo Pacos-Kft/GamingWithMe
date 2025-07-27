@@ -29,7 +29,6 @@ namespace GamingWithMe.Infrastructure.Data
         public DbSet<GameEasterEgg> GameEasterEggs => Set<GameEasterEgg>();
         public DbSet<Discount> Discounts => Set<Discount>();
         
-        // New DbSets for fixed services
         public DbSet<FixedService> FixedServices => Set<FixedService>();
         public DbSet<ServiceOrder> ServiceOrders => Set<ServiceOrder>();
         public DbSet<Notification> Notifications => Set<Notification>();
@@ -137,7 +136,6 @@ namespace GamingWithMe.Infrastructure.Data
                     .HasForeignKey(ut => ut.TagId);
             });
 
-            // New entity configurations for fixed services
             builder.Entity<FixedService>(e =>
             {
                 e.HasKey(x => x.Id);

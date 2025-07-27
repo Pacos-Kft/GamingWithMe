@@ -52,16 +52,13 @@ namespace GamingWithMe.Application.Services
             var username = email.Split('@')[0];
             username = Regex.Replace(username, @"[^a-zA-Z0-9_]", "");
             
-            // Ensure it doesn't start/end with underscore
             username = username.Trim('_');
             
-            // Ensure minimum length
             if (username.Length < 3)
             {
                 username = $"user{DateTime.Now.Ticks % 10000}";
             }
             
-            // Ensure it's not only numbers
             if (Regex.IsMatch(username, @"^\d+$"))
             {
                 username = $"user{username}";

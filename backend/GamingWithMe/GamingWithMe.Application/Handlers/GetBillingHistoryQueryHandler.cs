@@ -49,12 +49,10 @@ namespace GamingWithMe.Application.Handlers
 
                 var billingHistory = new List<BillingRecordDto>();
 
-                // Get ALL bookings where this user was involved (no time filtering)
                 _logger.LogDebug("Retrieving bookings from repository");
                 var bookings = await _bookingRepository.ListAsync(cancellationToken, b => b.Provider, b => b.Customer);
                 _logger.LogInformation("Retrieved {BookingCount} total bookings from repository", bookings.Count);
 
-                // Bookings where user was the customer (outgoing - paid out) - ALL BOOKINGS
                 var paidBookings = bookings.Where(b => b.CustomerId == user.Id).ToList();
                 _logger.LogInformation("Found {PaidBookingCount} bookings where user was the customer (ALL - past, present, future)", paidBookings.Count);
 
@@ -79,7 +77,6 @@ namespace GamingWithMe.Application.Handlers
                     ));
                 }
 
-                // Bookings where user was the provider (incoming - received payment) - ALL BOOKINGS
                 var receivedBookings = bookings.Where(b => b.ProviderId == user.Id).ToList();
                 _logger.LogInformation("Found {ReceivedBookingCount} bookings where user was the provider (ALL - past, present, future)", receivedBookings.Count);
 
@@ -104,7 +101,6 @@ namespace GamingWithMe.Application.Handlers
                     ));
                 }
 
-                // Get ALL service orders (no status filtering)
                 _logger.LogDebug("Retrieving service orders from repository");
                 var serviceOrders = await _serviceOrderRepository.ListAsync(cancellationToken, 
                     so => so.Service, so => so.Customer, so => so.Provider);
@@ -112,14 +108,13 @@ namespace GamingWithMe.Application.Handlers
 
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
-                    foreach (var order in serviceOrders.Take(5)) // Log first 5 for debugging
+                    foreach (var order in serviceOrders.Take(5)) 
                     {
                         _logger.LogDebug("Service order {OrderId}: Status={Status}, OrderDate={OrderDate}, CustomerId={CustomerId}, ProviderId={ProviderId}", 
                             order.Id, order.Status, order.OrderDate, order.CustomerId, order.ProviderId);
                     }
                 }
 
-                // Service orders where user was the customer (outgoing - paid out) - ALL ORDERS
                 var paidOrders = serviceOrders.Where(so => so.CustomerId == user.Id).ToList();
                 _logger.LogInformation("Found {PaidOrderCount} service orders where user was the customer (ALL statuses)", paidOrders.Count);
 
@@ -150,7 +145,6 @@ namespace GamingWithMe.Application.Handlers
                     ));
                 }
 
-                // Service orders where user was the provider (incoming - received payment) - ALL ORDERS
                 var receivedOrders = serviceOrders.Where(so => so.ProviderId == user.Id).ToList();
                 _logger.LogInformation("Found {ReceivedOrderCount} service orders where user was the provider (ALL statuses)", receivedOrders.Count);
 
@@ -187,7 +181,7 @@ namespace GamingWithMe.Application.Handlers
 
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
-                    foreach (var record in sortedBillingHistory.Take(5)) // Log first 5 records for debugging
+                    foreach (var record in sortedBillingHistory.Take(5)) 
                     {
                         _logger.LogDebug("Billing record: BookingId={BookingId}, TransactionDate={TransactionDate}, Amount={Amount}, Type={Type}, OtherParty={OtherParty}", 
                             record.BookingId, record.TransactionDate, record.Amount, record.TransactionType, record.OtherPartyUsername);

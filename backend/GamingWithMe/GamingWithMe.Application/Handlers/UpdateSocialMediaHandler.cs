@@ -27,7 +27,6 @@ namespace GamingWithMe.Application.Handlers
                 return false;
             }
 
-            // Update social media links (empty strings will be treated as clearing the link)
             user.TwitterUrl = string.IsNullOrWhiteSpace(request.TwitterUrl) ? null : request.TwitterUrl.Trim();
             user.InstagramUrl = string.IsNullOrWhiteSpace(request.InstagramUrl) ? null : request.InstagramUrl.Trim();
             user.FacebookUrl = string.IsNullOrWhiteSpace(request.FacebookUrl) ? null : request.FacebookUrl.Trim();

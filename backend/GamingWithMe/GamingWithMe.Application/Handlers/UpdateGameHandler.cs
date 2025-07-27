@@ -27,7 +27,6 @@ namespace GamingWithMe.Application.Handlers
 
             game.Name = request.GameDto.Name;
             game.Description = request.GameDto.Description;
-            // The slug should be regenerated if the name changes to maintain consistency.
             game.Slug = Domain.Common.SlugGenerator.From(request.GameDto.Name);
 
             await _gameRepository.Update(game);

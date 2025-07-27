@@ -50,7 +50,6 @@ namespace GamingWithMe.Api.Controllers
                 return NotFound("User not found.");
             }
 
-            // Get the IdentityUser to check roles
             var identityUser = await _userManager.FindByIdAsync(userId);
             var isAdmin = identityUser != null && await _userManager.IsInRoleAsync(identityUser, "Admin");
 
@@ -294,7 +293,6 @@ namespace GamingWithMe.Api.Controllers
             {
                 var userId = GetUserId();
 
-                // Create command with only the specified platform cleared
                 var result = platform.ToLower() switch
                 {
                     "twitter" or "x" => await _mediator.Send(new UpdateSocialMediaCommand(userId, null, null, null)),
@@ -303,7 +301,6 @@ namespace GamingWithMe.Api.Controllers
                     _ => false
                 };
 
-                // For individual deletion, we need a more specific approach
                 var user = (await _userRepository.ListAsync()).FirstOrDefault(u => u.UserId == userId);
                 if (user == null) return NotFound("User not found.");
 

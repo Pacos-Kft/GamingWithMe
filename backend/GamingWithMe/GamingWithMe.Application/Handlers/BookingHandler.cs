@@ -72,12 +72,10 @@ namespace GamingWithMe.Application.Handlers
             await _bookingrepo.AddAsync(booking);
             _logger.LogInformation("Booking {BookingId} created successfully", booking.Id);
 
-            // Mark appointment as unavailable
             appointment.IsAvailable = false;
             await _userrepo.Update(provider);
             _logger.LogInformation("Appointment {AppointmentId} marked as unavailable", request.appointmentId);
 
-            // Send emails to both provider and customer
             await SendBookingConfirmationEmails(provider, customer, booking, appointment);
 
             return true;
@@ -89,7 +87,6 @@ namespace GamingWithMe.Application.Handlers
 
             try
             {
-                // Get provider and customer email addresses
                 var providerEmail = provider.IdentityUser?.Email;
                 var customerEmail = customer.IdentityUser?.Email;
 
@@ -99,7 +96,6 @@ namespace GamingWithMe.Application.Handlers
                 var appointmentDateTime = appointment.Date.Add(appointment.StartTime);
                 var endDateTime = appointmentDateTime.Add(appointment.Duration);
 
-                // Email variables for templates
                 var emailVariables = new Dictionary<string, string>
                 {
                     { "provider_name", provider.Username },
@@ -114,7 +110,6 @@ namespace GamingWithMe.Application.Handlers
 
                 _logger.LogInformation("Email variables prepared for booking {BookingId}", booking.Id);
 
-                // Send email to provider
                 bool providerEmailSent = false;
                 if (!string.IsNullOrEmpty(providerEmail))
                 {
@@ -126,7 +121,7 @@ namespace GamingWithMe.Application.Handlers
                         await _emailService.SendEmailAsync(
                             providerEmail,
                             "New Booking Received - Gaming Session",
-                            7178607, // Replace with Mailjet template ID for provider
+                            7178607, 
                             emailVariables
                         );
 
@@ -145,7 +140,6 @@ namespace GamingWithMe.Application.Handlers
                     _logger.LogWarning("Provider email is null or empty for booking {BookingId}, skipping provider email", booking.Id);
                 }
 
-                // Send email to customer
                 bool customerEmailSent = false;
                 if (!string.IsNullOrEmpty(customerEmail))
                 {
@@ -157,7 +151,7 @@ namespace GamingWithMe.Application.Handlers
                         await _emailService.SendEmailAsync(
                             customerEmail,
                             "Booking Confirmation - Gaming Session",
-                            7178601, // Replace with Mailjet template ID for customer
+                            7178601,
                             emailVariables
                         );
 
@@ -176,7 +170,6 @@ namespace GamingWithMe.Application.Handlers
                     _logger.LogWarning("Customer email is null or empty for booking {BookingId}, skipping customer email", booking.Id);
                 }
 
-                // Log summary of email sending results
                 _logger.LogInformation("Email sending summary for booking {BookingId} - Provider email sent: {ProviderSent}, Customer email sent: {CustomerSent}",
                     booking.Id, providerEmailSent, customerEmailSent);
 

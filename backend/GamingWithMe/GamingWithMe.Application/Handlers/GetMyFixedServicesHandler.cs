@@ -30,14 +30,12 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<List<FixedServiceDto>> Handle(GetMyFixedServicesQuery request, CancellationToken cancellationToken)
         {
-            // Find the user by string UserId
             var user = (await _userRepository.ListAsync(cancellationToken))
                 .FirstOrDefault(u => u.UserId == request.UserId);
 
             if (user == null)
                 throw new InvalidOperationException("User not found");
 
-            // Get services for this specific user with simple includes
             var services = await _serviceRepository.ListAsync(cancellationToken, s => s.User);
             
             var userServices = services

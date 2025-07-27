@@ -33,18 +33,14 @@ namespace GamingWithMe.Application.Handlers
 
         public async Task<List<FixedServiceDto>> Handle(GetFixedServicesQuery request, CancellationToken cancellationToken)
         {
-            // Get services with just the User included
             var services = await _serviceRepository.ListAsync(cancellationToken, s => s.User);
             
-            // Get all users with their tags
             var users = await _userRepository.ListAsync(cancellationToken, u => u.Tags);
             var allTags = await _tagRepository.ListAsync(cancellationToken);
             
-            // Create dictionaries for efficient lookups
             var userDict = users.ToDictionary(u => u.Id);
             var tagDict = allTags.ToDictionary(t => t.Id);
             
-            // Manually populate the Tag navigation properties
             foreach (var user in users)
             {
                 foreach (var userTag in user.Tags)
@@ -56,7 +52,6 @@ namespace GamingWithMe.Application.Handlers
                 }
             }
             
-            // Update services with the populated user data
             foreach (var service in services)
             {
                 if (userDict.TryGetValue(service.UserId, out var populatedUser))

@@ -57,7 +57,6 @@ namespace GamingWithMe.Application.Handlers
 
             await _orderRepository.AddAsync(order, cancellationToken);
 
-            // Send emails to both provider and customer
             await SendServiceOrderConfirmationEmails(service.User, customer, service, order);
 
             return order.Id;
@@ -67,11 +66,9 @@ namespace GamingWithMe.Application.Handlers
         {
             try
             {
-                // Get provider and customer email addresses
                 var providerEmail = provider.IdentityUser?.Email;
                 var customerEmail = customer.IdentityUser?.Email;
 
-                // Email variables for templates
                 var emailVariables = new Dictionary<string, string>
                 {
                     { "provider_name", provider.Username },
@@ -85,31 +82,28 @@ namespace GamingWithMe.Application.Handlers
                     { "order_id", order.Id.ToString() }
                 };
 
-                // Send email to provider
                 if (!string.IsNullOrEmpty(providerEmail))
                 {
                     await _emailService.SendEmailAsync(
                         providerEmail,
                         "New Service Order Received",
-                        7178616, // Replace with Mailjet template ID for provider service order
+                        7178616, 
                         emailVariables
                     );
                 }
 
-                // Send email to customer
                 if (!string.IsNullOrEmpty(customerEmail))
                 {
                     await _emailService.SendEmailAsync(
                         customerEmail,
                         "Service Order Confirmation",
-                        7178615, // Replace with Mailjet template ID for customer service order
+                        7178615, 
                         emailVariables
                     );
                 }
             }
             catch (Exception ex)
             {
-                // Log the error but don't fail the order process
                 Console.WriteLine($"Failed to send service order confirmation emails: {ex.Message}");
             }
         }

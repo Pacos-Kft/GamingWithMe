@@ -38,7 +38,6 @@ namespace GamingWithMe.Application.Handlers
 
             ValidatePassword(request.NewPassword);
 
-            // Change the password
             var result = await _userManager.ChangePasswordAsync(identityUser, request.CurrentPassword, request.NewPassword);
 
             if (!result.Succeeded)

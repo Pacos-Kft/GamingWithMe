@@ -33,7 +33,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure cookie policy for external authentication
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.None;
@@ -51,7 +50,6 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>()
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Configure Identity application cookie
 builder.Services.ConfigureApplicationCookie(opt =>
 {
     opt.Cookie.Name = "gamingwithme.auth";
@@ -70,7 +68,6 @@ builder.Services.ConfigureApplicationCookie(opt =>
     };
 });
 
-// Configure external authentication cookie (for Google)
 builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ExternalScheme, options =>
 {
     options.Cookie.Name = "gamingwithme.external";
@@ -81,7 +78,6 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Extern
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
 });
 
-// Add Google authentication with proper configuration
 builder.Services.AddAuthentication()
     .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
     {
@@ -90,14 +86,12 @@ builder.Services.AddAuthentication()
         options.SignInScheme = IdentityConstants.ExternalScheme;
         options.SaveTokens = true;
 
-        // Configure correlation cookie
         options.CorrelationCookie.Name = "gamingwithme.correlation";
         options.CorrelationCookie.SameSite = SameSiteMode.None;
         options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
         options.CorrelationCookie.HttpOnly = true;
         options.CorrelationCookie.IsEssential = true;
 
-        // Add callback path explicitly
         options.CallbackPath = "/signin-google";
     });
 
@@ -129,7 +123,6 @@ builder.Services.AddSingleton<IAmazonS3>(provider => {
 builder.Services.AddSignalR();
 
 
-// AutoMapper – scan Profiles
 builder.Services.AddAutoMapper(typeof(GameProfile).Assembly);
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(UserProfile).Assembly));
 
@@ -139,7 +132,6 @@ builder.Services.AddScoped<IEmailService, MailjetEmailService>();
 
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -158,7 +150,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

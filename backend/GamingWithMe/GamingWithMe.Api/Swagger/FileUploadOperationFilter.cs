@@ -28,7 +28,6 @@ namespace GamingWithMe.Api.Swagger
                         {
                             Type = p.Type == typeof(IFormFile) ? "string" : null,
                             Format = p.Type == typeof(IFormFile) ? "binary" : null,
-                            // Handle other form fields if necessary
                             Description = p.ModelMetadata?.Description
                         })
                 }

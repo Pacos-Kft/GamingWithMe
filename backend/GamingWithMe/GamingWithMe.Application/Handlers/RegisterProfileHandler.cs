@@ -38,7 +38,6 @@ namespace GamingWithMe.Application.Handlers
                 throw new InvalidOperationException("An account with this email already exists.");
             }
 
-            // Validate username using the new validation service
             UsernameValidationService.ValidateUsername(dto.username);
 
             var existingCustomUser = (await _userRepo.ListAsync(cancellationToken))
