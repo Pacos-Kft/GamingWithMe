@@ -67,15 +67,7 @@ namespace GamingWithMe.Application.Handlers
             {
                 var userId = await _mediator.Send(new RegisterProfileCommand(registerDto), cancellationToken);
                 
-                var newUser = (await _userRepo.ListAsync(cancellationToken))
-                    .FirstOrDefault(u => u.UserId == userId);
                 
-                if (newUser != null)
-                {
-                    newUser.GoogleId = request.GoogleId;
-                    await _userRepo.Update(newUser);
-                }
-
                 return new UserDto(request.Email, request.GoogleId, null, request.FullName);
             }
             catch (Exception ex)
