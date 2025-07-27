@@ -169,8 +169,8 @@ namespace GamingWithMe.Api.Controllers
                         }
                     },
                     Mode = "payment",
-                    SuccessUrl = "http://localhost:5173",
-                    CancelUrl = "http://localhost:5173",
+                    SuccessUrl = "https://localhost:5173",
+                    CancelUrl = "https://localhost:5173",
                     PaymentIntentData = new SessionPaymentIntentDataOptions
                     {
                         ApplicationFeeAmount = applicationFee,
