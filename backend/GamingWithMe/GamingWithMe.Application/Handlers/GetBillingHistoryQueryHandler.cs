@@ -3,6 +3,7 @@ using GamingWithMe.Application.Interfaces;
 using GamingWithMe.Application.Queries;
 using GamingWithMe.Domain.Entities;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,92 +17,191 @@ namespace GamingWithMe.Application.Handlers
         private readonly IAsyncRepository<User> _userRepository;
         private readonly IAsyncRepository<Booking> _bookingRepository;
         private readonly IAsyncRepository<ServiceOrder> _serviceOrderRepository;
+        private readonly ILogger<GetBillingHistoryQueryHandler> _logger;
 
         public GetBillingHistoryQueryHandler(
             IAsyncRepository<User> userRepository, 
             IAsyncRepository<Booking> bookingRepository,
-            IAsyncRepository<ServiceOrder> serviceOrderRepository)
+            IAsyncRepository<ServiceOrder> serviceOrderRepository,
+            ILogger<GetBillingHistoryQueryHandler> logger)
         {
             _userRepository = userRepository;
             _bookingRepository = bookingRepository;
             _serviceOrderRepository = serviceOrderRepository;
+            _logger = logger;
         }
 
         public async Task<List<BillingRecordDto>> Handle(GetBillingHistoryQuery request, CancellationToken cancellationToken)
         {
-            var user = (await _userRepository.ListAsync(cancellationToken)).FirstOrDefault(u => u.UserId == request.UserId);
-            if (user == null) return new List<BillingRecordDto>();
+            _logger.LogInformation("Processing GetBillingHistoryQuery for UserId: {UserId}", request.UserId);
 
-            var billingHistory = new List<BillingRecordDto>();
-
-            // Get past bookings where this user was involved
-            var bookings = await _bookingRepository.ListAsync(cancellationToken, b => b.Provider, b => b.Customer);
-            var pastBookings = bookings.Where(b => b.StartTime <= DateTime.UtcNow).ToList();
-
-            // Bookings where user was the customer (outgoing - paid out)
-            var paidBookings = pastBookings.Where(b => b.CustomerId == user.Id);
-            foreach (var booking in paidBookings)
+            try
             {
-                billingHistory.Add(new BillingRecordDto(
-                    booking.Id,
-                    booking.StartTime,
-                    booking.Amount, // Use the actual amount stored in booking
-                    "Paid",
-                    booking.Provider.Username,
-                    booking.Provider.AvatarUrl
-                ));
-            }
+                var user = (await _userRepository.ListAsync(cancellationToken)).FirstOrDefault(u => u.UserId == request.UserId);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found for UserId: {UserId}", request.UserId);
+                    return new List<BillingRecordDto>();
+                }
 
-            // Bookings where user was the provider (incoming - received payment)
-            var receivedBookings = pastBookings.Where(b => b.ProviderId == user.Id);
-            foreach (var booking in receivedBookings)
+                _logger.LogInformation("Found user {Username} (Id: {Id}) for UserId: {UserId}", 
+                    user.Username, user.Id, request.UserId);
+
+                var billingHistory = new List<BillingRecordDto>();
+
+                // Get ALL bookings where this user was involved (no time filtering)
+                _logger.LogDebug("Retrieving bookings from repository");
+                var bookings = await _bookingRepository.ListAsync(cancellationToken, b => b.Provider, b => b.Customer);
+                _logger.LogInformation("Retrieved {BookingCount} total bookings from repository", bookings.Count);
+
+                // Bookings where user was the customer (outgoing - paid out) - ALL BOOKINGS
+                var paidBookings = bookings.Where(b => b.CustomerId == user.Id).ToList();
+                _logger.LogInformation("Found {PaidBookingCount} bookings where user was the customer (ALL - past, present, future)", paidBookings.Count);
+
+                foreach (var booking in paidBookings)
+                {
+                    _logger.LogDebug("Processing paid booking {BookingId}: Amount={Amount}, Provider={ProviderUsername}, StartTime={StartTime}", 
+                        booking.Id, booking.Amount, booking.Provider?.Username ?? "NULL", booking.StartTime);
+
+                    if (booking.Provider == null)
+                    {
+                        _logger.LogWarning("Booking {BookingId} has null Provider, skipping", booking.Id);
+                        continue;
+                    }
+
+                    billingHistory.Add(new BillingRecordDto(
+                        booking.Id,
+                        booking.StartTime,
+                        booking.Amount,
+                        "Paid",
+                        booking.Provider.Username,
+                        booking.Provider.AvatarUrl
+                    ));
+                }
+
+                // Bookings where user was the provider (incoming - received payment) - ALL BOOKINGS
+                var receivedBookings = bookings.Where(b => b.ProviderId == user.Id).ToList();
+                _logger.LogInformation("Found {ReceivedBookingCount} bookings where user was the provider (ALL - past, present, future)", receivedBookings.Count);
+
+                foreach (var booking in receivedBookings)
+                {
+                    _logger.LogDebug("Processing received booking {BookingId}: Amount={Amount}, Customer={CustomerUsername}, StartTime={StartTime}", 
+                        booking.Id, booking.Amount, booking.Customer?.Username ?? "NULL", booking.StartTime);
+
+                    if (booking.Customer == null)
+                    {
+                        _logger.LogWarning("Booking {BookingId} has null Customer, skipping", booking.Id);
+                        continue;
+                    }
+
+                    billingHistory.Add(new BillingRecordDto(
+                        booking.Id,
+                        booking.StartTime,
+                        booking.Amount,
+                        "Received",
+                        booking.Customer.Username,
+                        booking.Customer.AvatarUrl
+                    ));
+                }
+
+                // Get ALL service orders (no status filtering)
+                _logger.LogDebug("Retrieving service orders from repository");
+                var serviceOrders = await _serviceOrderRepository.ListAsync(cancellationToken, 
+                    so => so.Service, so => so.Customer, so => so.Provider);
+                _logger.LogInformation("Retrieved {ServiceOrderCount} total service orders from repository", serviceOrders.Count);
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    foreach (var order in serviceOrders.Take(5)) // Log first 5 for debugging
+                    {
+                        _logger.LogDebug("Service order {OrderId}: Status={Status}, OrderDate={OrderDate}, CustomerId={CustomerId}, ProviderId={ProviderId}", 
+                            order.Id, order.Status, order.OrderDate, order.CustomerId, order.ProviderId);
+                    }
+                }
+
+                // Service orders where user was the customer (outgoing - paid out) - ALL ORDERS
+                var paidOrders = serviceOrders.Where(so => so.CustomerId == user.Id).ToList();
+                _logger.LogInformation("Found {PaidOrderCount} service orders where user was the customer (ALL statuses)", paidOrders.Count);
+
+                foreach (var order in paidOrders)
+                {
+                    _logger.LogDebug("Processing paid service order {OrderId}: Service.Price={ServicePrice}, Provider={ProviderUsername}, OrderDate={OrderDate}, Status={Status}", 
+                        order.Id, order.Service?.Price ?? 0, order.Provider?.Username ?? "NULL", order.OrderDate, order.Status);
+
+                    if (order.Service == null)
+                    {
+                        _logger.LogWarning("Service order {OrderId} has null Service, skipping", order.Id);
+                        continue;
+                    }
+
+                    if (order.Provider == null)
+                    {
+                        _logger.LogWarning("Service order {OrderId} has null Provider, skipping", order.Id);
+                        continue;
+                    }
+
+                    billingHistory.Add(new BillingRecordDto(
+                        order.Id,
+                        order.OrderDate,
+                        order.Service.Price,
+                        "Paid",
+                        order.Provider.Username,
+                        order.Provider.AvatarUrl
+                    ));
+                }
+
+                // Service orders where user was the provider (incoming - received payment) - ALL ORDERS
+                var receivedOrders = serviceOrders.Where(so => so.ProviderId == user.Id).ToList();
+                _logger.LogInformation("Found {ReceivedOrderCount} service orders where user was the provider (ALL statuses)", receivedOrders.Count);
+
+                foreach (var order in receivedOrders)
+                {
+                    _logger.LogDebug("Processing received service order {OrderId}: Service.Price={ServicePrice}, Customer={CustomerUsername}, OrderDate={OrderDate}, Status={Status}", 
+                        order.Id, order.Service?.Price ?? 0, order.Customer?.Username ?? "NULL", order.OrderDate, order.Status);
+
+                    if (order.Service == null)
+                    {
+                        _logger.LogWarning("Service order {OrderId} has null Service, skipping", order.Id);
+                        continue;
+                    }
+
+                    if (order.Customer == null)
+                    {
+                        _logger.LogWarning("Service order {OrderId} has null Customer, skipping", order.Id);
+                        continue;
+                    }
+
+                    billingHistory.Add(new BillingRecordDto(
+                        order.Id,
+                        order.OrderDate,
+                        order.Service.Price,
+                        "Received",
+                        order.Customer.Username,
+                        order.Customer.AvatarUrl
+                    ));
+                }
+
+                var sortedBillingHistory = billingHistory.OrderByDescending(b => b.TransactionDate).ToList();
+                _logger.LogInformation("Returning {BillingRecordCount} billing records for UserId: {UserId} (ALL transactions regardless of status/timing)", 
+                    sortedBillingHistory.Count, request.UserId);
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    foreach (var record in sortedBillingHistory.Take(5)) // Log first 5 records for debugging
+                    {
+                        _logger.LogDebug("Billing record: BookingId={BookingId}, TransactionDate={TransactionDate}, Amount={Amount}, Type={Type}, OtherParty={OtherParty}", 
+                            record.BookingId, record.TransactionDate, record.Amount, record.TransactionType, record.OtherPartyUsername);
+                    }
+                }
+
+                return sortedBillingHistory;
+            }
+            catch (Exception ex)
             {
-                billingHistory.Add(new BillingRecordDto(
-                    booking.Id,
-                    booking.StartTime,
-                    booking.Amount, // Use the actual amount stored in booking
-                    "Received",
-                    booking.Customer.Username,
-                    booking.Customer.AvatarUrl
-                ));
+                _logger.LogError(ex, "Error occurred while processing GetBillingHistoryQuery for UserId: {UserId}. Error: {Message}", 
+                    request.UserId, ex.Message);
+                throw;
             }
-
-            // Get completed or cancelled service orders
-            var serviceOrders = await _serviceOrderRepository.ListAsync(cancellationToken, 
-                so => so.Service, so => so.Customer, so => so.Provider);
-            var completedOrders = serviceOrders.Where(so => 
-                so.Status == OrderStatus.Completed || 
-                so.Status == OrderStatus.Cancelled).ToList();
-
-            // Service orders where user was the customer (outgoing - paid out)
-            var paidOrders = completedOrders.Where(so => so.CustomerId == user.Id);
-            foreach (var order in paidOrders)
-            {
-                billingHistory.Add(new BillingRecordDto(
-                    order.Id,
-                    order.OrderDate,
-                    order.Service.Price, // Use the service price
-                    "Paid",
-                    order.Provider.Username,
-                    order.Provider.AvatarUrl
-                ));
-            }
-
-            // Service orders where user was the provider (incoming - received payment)
-            var receivedOrders = completedOrders.Where(so => so.ProviderId == user.Id);
-            foreach (var order in receivedOrders)
-            {
-                billingHistory.Add(new BillingRecordDto(
-                    order.Id,
-                    order.OrderDate,
-                    order.Service.Price, // Use the service price
-                    "Received",
-                    order.Customer.Username,
-                    order.Customer.AvatarUrl
-                ));
-            }
-
-            return billingHistory.OrderByDescending(b => b.TransactionDate).ToList();
         }
     }
 }
